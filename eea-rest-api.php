@@ -3,7 +3,7 @@
   Plugin Name: Event Espresso - REST API (EE4.x+)
   Plugin URI: http://www.eventespresso.com
   Description: The Event Espresso REST API adds NEW stuff to Event Espresso. Compatible with Event Espresso 4.x or higher
-  Version: 0.9.9.dev.000
+  Version: 0.9.9.rc.002
   Author: Event Espresso
   Author URI: http://www.eventespresso.com
   Copyright 2014 Event Espresso (email : support@eventespresso.com)
@@ -28,15 +28,15 @@
  * Event Registration and Management Plugin for WordPress
  *
  * @ package		Event Espresso
- * @ author			Event Espresso
+ * @ author		Event Espresso
  * @ copyright	(c) 2008-2014 Event Espresso  All Rights Reserved.
  * @ license		http://eventespresso.com/support/terms-conditions/   * see Plugin Licensing *
- * @ link				http://www.eventespresso.com
+ * @ link			http://www.eventespresso.com
  * @ version	 	EE4
  *
  * ------------------------------------------------------------------------
  */
-define( 'EE_REST_API_VERSION', '0.9.9.dev.000' );
+define( 'EE_REST_API_VERSION', '0.9.9.rc.002' );
 define( 'EE_REST_API_PLUGIN_FILE',  __FILE__ );
 function load_espresso_rest_api() {
 if ( class_exists( 'EE_Addon' )) {

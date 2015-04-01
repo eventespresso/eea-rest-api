@@ -1,0 +1,19 @@
+{
+	"versionFile" : "eea-rest-api.php",
+	"slug" : "eea-rest-api",
+	"textDomain" : "event_espresso",
+	"name" : "Event Espresso REST API",
+	"archiveBaseUrl" : "http://build.eventespresso.com/",
+	"archiveBasePath" : "~/www/build/",
+	"srcBuildFolderName" : "eea-rest-api",
+	"releaseFilesRemove" : [
+		"src/tests/**",
+		"src/info.json",
+		"src/circle.yml",
+		"src/readme.txt",
+		"src/wp-assets/**"
+	],
+	"github" : true,
+	"awsbucket" : "",
+	"awsregion" : ""
+}
