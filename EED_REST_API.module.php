@@ -96,6 +96,13 @@ class EED_REST_API extends EED_Module {
 		 return $model_routes;
 	 }
 
+	 /**
+	  *
+	  * @param type $_method
+	  * @param type $_path
+	  * @param type $_headers
+	  * @return array
+	  */
 	 public function get( $_method = null, $_path = null, $_headers = array() ) {
 		$inflector = new Inflector();
 		$regex = '~\/ee4\/(.*)~';
@@ -103,6 +110,9 @@ class EED_REST_API extends EED_Module {
 		if( is_array( $matches ) && isset( $matches[1] )){
 			$model_name_plural = $matches[1];
 			$model_name_singular = ucwords( $inflector->singularize($model_name_plural) );
+			if( ! EE_Registry::instance()->is_model_name( $model_name_singular ) ) {
+				return new WP_Error('endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
+			}
 			$model = EE_Registry::instance()->load_model( $model_name_singular );
 			$results = $model->get_all_wpdb_results();
 			$nice_results = array();
@@ -111,7 +121,7 @@ class EED_REST_API extends EED_Module {
 			}
 			return $nice_results;
 		}else{
-
+			return new WP_Error('endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
 		}
 
 	 }
