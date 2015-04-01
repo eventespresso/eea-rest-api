@@ -48,7 +48,7 @@ class EED_REST_API extends EED_Module {
 	  *  @return 	void
 	  */
 	 public static function set_hooks() {
-		 EE_Config::register_route( 'rest_api', 'EED_REST_API', 'run' );
+		 self::set_hooks_both();
 	 }
 
 	 /**
@@ -61,13 +61,60 @@ class EED_REST_API extends EED_Module {
 		 // ajax hooks
 		 add_action( 'wp_ajax_get_rest_api', array( 'EED_REST_API', 'get_rest_api' ));
 		 add_action( 'wp_ajax_nopriv_get_rest_api', array( 'EED_REST_API', 'get_rest_api' ));
+		 self::set_hooks_both();
 	 }
 
-	 public static function get_rest_api(){
-		 echo json_encode( array( 'response' => 'ok', 'details' => 'you have made an ajax request!') );
-		 die;
+	 public static function set_hooks_both() {
+		 add_filter( 'json_endpoints', array( 'EED_REST_API', 'register_routes' ) );
 	 }
 
+	 public static function register_routes( $routes ){
+		$instance = self::instance();
+		$routes = array_merge( $routes, $instance->_register_model_routes() );
+//		$routes['/myplugin/mytypeitems'] = array(
+//			array( array( $this, 'get_posts'), WP_JSON_Server::READABLE ),
+//			array( array( $this, 'new_post'), WP_JSON_Server::CREATABLE | WP_JSON_Server::ACCEPT_JSON ),
+//		);
+//		$routes['/myplugin/mytypeitems/(?P<id>\d+)'] = array(
+//			array( array( $this, 'get_post'), WP_JSON_Server::READABLE ),
+//			array( array( $this, 'edit_post'), WP_JSON_Server::EDITABLE | WP_JSON_Server::ACCEPT_JSON ),
+//			array( array( $this, 'delete_post'), WP_JSON_Server::DELETABLE ),
+//		);
+		return $routes;
+	 }
+
+	 protected function _register_model_routes() {
+		 $models_to_register = EE_Registry::instance()->non_abstract_db_models;
+		 $model_routes = array();
+		 $inflector = new Inflector();
+		 foreach( $models_to_register as $model_name => $model_classname ){
+			 $model_routes['/ee4/' . strtolower( $inflector->pluralize( $model_name ) ) ] = array(
+				 array( array( $this, 'get' ), WP_JSON_Server::READABLE ),
+				 //others to go here...
+				 );
+		 }
+		 return $model_routes;
+	 }
+
+	 public function get( $_method = null, $_path = null, $_headers = array() ) {
+		$inflector = new Inflector();
+		$regex = '~\/ee4\/(.*)~';
+		$success = preg_match( $regex, $_path, $matches );
+		if( is_array( $matches ) && isset( $matches[1] )){
+			$model_name_plural = $matches[1];
+			$model_name_singular = ucwords( $inflector->singularize($model_name_plural) );
+			$model = EE_Registry::instance()->load_model( $model_name_singular );
+			$results = $model->get_all_wpdb_results();
+			$nice_results = array();
+			foreach( $results as $result ) {
+				$nice_results[] = $model->_deduce_fields_n_values_from_cols_n_values( $result );
+			}
+			return $nice_results;
+		}else{
+
+		}
+
+	 }
 
 
 	/**
