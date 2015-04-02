@@ -103,7 +103,8 @@ class EED_REST_API extends EED_Module {
 	  * @param type $_headers
 	  * @return array
 	  */
-	 public function get( $_method = null, $_path = null, $_headers = array() ) {
+	 public function get( $_path,
+			 $filter=array() ) {
 		$inflector = new Inflector();
 		$regex = '~\/ee4\/(.*)~';
 		$success = preg_match( $regex, $_path, $matches );
@@ -114,16 +115,59 @@ class EED_REST_API extends EED_Module {
 				return new WP_Error('endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
 			}
 			$model = EE_Registry::instance()->load_model( $model_name_singular );
-			$results = $model->get_all_wpdb_results();
-			$nice_results = array();
-			foreach( $results as $result ) {
-				$nice_results[] = $model->_deduce_fields_n_values_from_cols_n_values( $result );
-			}
-			return $nice_results;
+			return $this->get_entities_from_model( $model, $filter );
 		}else{
 			return new WP_Error('endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
 		}
+	 }
 
+	 /**
+	  *
+	  * @param EEM_Base $model
+	  * @param array $filter
+	  * @return array
+	  */
+	 public function get_entities_from_model( $model, $filter ) {
+		$query_params =  $this->create_model_params( $model, $filter );
+		$results = $model->get_all_wpdb_results( $query_params );
+		$nice_results = array();
+		foreach( $results as $result ) {
+			$nice_results[] = $model->_deduce_fields_n_values_from_cols_n_values( $result );
+		}
+		return $nice_results;
+	 }
+
+	 /**
+	  * Translates API filter get parameter into $query_params array used by EEM_Base::get_all()
+	  * @param type $model
+	  * @param type $filter
+	  * @return array like what EEM_Base::get_all() expects
+	  */
+	 public function create_model_params( $model, $filter ){
+		 $model_query_params = array();
+		 if( isset( $filter['where'] ) ) {
+			 //@todo: no good for permissions
+			 $model_query_params[0] = $filter['where'];
+		 }
+		 if( isset( $filter[ 'order_by' ] ) ){
+			 $model_query_params[ 'order_by' ] = $filter[ 'order_by'];
+		 }elseif( isset( $filter[ 'orderby' ] ) ) {
+			 $model_query_params[ 'order_by' ] = $filter[ 'orderby' ];
+		 }
+		 if( isset( $filter[ 'group_by' ] ) ) {
+			 $model_query_params[ 'group_by' ] = $filter[ 'group_by' ];
+		 }
+		 if( isset( $filter[ 'having' ] ) ) {
+			 //@todo: no good for permissions
+			 $model_query_params[ 'having' ] = $filter[ 'having' ];
+		 }
+		 if( isset( $filter[ 'order' ] ) ) {
+			 $model_query_params[ 'order' ] = $filter[ 'order' ];
+		 }
+		 if( isset( $filter[ 'default_where_conditions' ] ) ) {
+			 $model_query_params[ 'default_where_conditions' ]  = $filter[ 'default_where_conditions' ];
+		 }
+		 return apply_filters( 'FHEE__EED_REST_API__create_model_params', $model_query_params, $filter, $model );
 	 }
 
 
