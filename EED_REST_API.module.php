@@ -89,7 +89,7 @@ class EED_REST_API extends EED_Module {
 		 $inflector = new Inflector();
 		 foreach( $models_to_register as $model_name => $model_classname ){
 			 $model_routes['/ee4/' . strtolower( $inflector->pluralize( $model_name ) ) ] = array(
-				 array( array( $this, 'get' ), WP_JSON_Server::READABLE ),
+				 array( array( $this, 'handle_request_get_all' ), WP_JSON_Server::READABLE ),
 				 //others to go here...
 				 );
 		 }
@@ -97,22 +97,22 @@ class EED_REST_API extends EED_Module {
 	 }
 
 	 /**
-	  *
+	  * Handles requests to get all (or a filtered subset) of entities for a particular model
 	  * @param type $_method
 	  * @param type $_path
 	  * @param type $_headers
 	  * @return array
 	  */
-	 public function get( $_path,
+	 public function handle_request_get_all( $_path,
 			 $filter=array() ) {
 		$inflector = new Inflector();
 		$regex = '~\/ee4\/(.*)~';
 		$success = preg_match( $regex, $_path, $matches );
 		if( is_array( $matches ) && isset( $matches[1] )){
 			$model_name_plural = $matches[1];
-			$model_name_singular = ucwords( $inflector->singularize($model_name_plural) );
+			$model_name_singular = str_replace(' ', '_', $inflector->humanize($inflector->singularize($model_name_plural), 'all' ) );
 			if( ! EE_Registry::instance()->is_model_name( $model_name_singular ) ) {
-				return new WP_Error('endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
+				return new WP_Error('endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) );
 			}
 			$model = EE_Registry::instance()->load_model( $model_name_singular );
 			return $this->get_entities_from_model( $model, $filter );
