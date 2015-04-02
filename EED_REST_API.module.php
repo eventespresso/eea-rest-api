@@ -30,6 +30,7 @@ class EED_REST_API extends EED_Module {
 
 	const ee_api_namespace = '/ee4/v2/';
 	const ee_api_namespace_for_regex = '\/ee4\/v2\/';
+	const saved_routes_option_names = 'ee_routes';
 
 	/**
 	 * @return EED_REST_API
@@ -69,13 +70,39 @@ class EED_REST_API extends EED_Module {
 	}
 
 
-
+	/**
+	 * Filters the WP routes to add our EE-related ones. This takes a bit of time
+	 * so we actually prefer to only do it when an EE plugin is activated or upgraded
+	 * @param array $routes
+	 * @return array
+	 */
 	public static function register_routes( $routes ) {
-		$instance = self::instance();
-		$routes = array_merge( $routes, $instance->_register_model_routes() );
+		$ee_routes = get_option( self::saved_routes_option_names, null );
+		if( ! $ee_routes ){
+			self::save_ee_routes();
+			$ee_routes = get_option( self::saved_routes_option_names, array() );
+		}
+		$routes = array_merge( $routes, $ee_routes );
 		return $routes;
 	}
 
+	/**
+	 * Calculates all the EE routes and saves it to a wordpress option so we don't
+	 * need to calculate it on every request
+	 * @return void
+	 */
+	public static function save_ee_routes() {
+		if( EE_Maintenance_Mode::instance()->models_can_query() ){
+			$instance = self::instance();
+			$routes = $instance->_register_model_routes();
+			update_option( self::saved_routes_option_names, $routes, true );
+		}
+	}
+
+	/**
+	 * Gets all the route information relating to EE models
+	 * @return array
+	 */
 	protected function _register_model_routes() {
 		$models_to_register = EE_Registry::instance()->non_abstract_db_models;
 		$model_routes = array( );
@@ -83,11 +110,11 @@ class EED_REST_API extends EED_Module {
 		foreach ( $models_to_register as $model_name => $model_classname ) {
 			//yes we could jsut register one route for ALL models, but then they wouldn't show up in the index
 			$model_routes[ self::ee_api_namespace . strtolower( $inflector->pluralize( $model_name ) ) ] = array(
-				array( array( $this, 'handle_request_get_all' ), WP_JSON_Server::READABLE ),
+				array( array( 'EED_REST_API', 'handle_request_get_all' ), WP_JSON_Server::READABLE ),
 					//@todo: also handle POST, PUT
 			);
 			$model_routes[ self::ee_api_namespace . strtolower( $inflector->pluralize( $model_name ) ) . '/(?P<id>\d+)' ] = array(
-				array( array( $this, 'handle_request_get_one' ), WP_JSON_Server::READABLE ),
+				array( array( 'EED_REST_API', 'handle_request_get_one' ), WP_JSON_Server::READABLE ),
 					//@todo: also handle PUT, DELETE,
 			);
 			$model = EE_Registry::instance()->load_model( $model_classname );
@@ -98,7 +125,7 @@ class EED_REST_API extends EED_Module {
 					$related_model_name_endpoint_part = strtolower( $inflector->pluralize( ( $relation_name ) ) );
 				}
 				$model_routes[ self::ee_api_namespace . strtolower( $inflector->pluralize( $model_name ) ) . '/(?P<id>\d+)/' . $related_model_name_endpoint_part ] = array(
-					array( array( $this, 'handle_request_get_related' ), WP_JSON_Server::READABLE )
+					array( array( 'EED_REST_API', 'handle_request_get_related' ), WP_JSON_Server::READABLE )
 						//@todo: also handle POST, PUT
 				);
 			}
@@ -115,7 +142,7 @@ class EED_REST_API extends EED_Module {
 	 * @param type $_headers
 	 * @return array
 	 */
-	public function handle_request_get_all( $_path, $filter = array( ) ) {
+	public static function handle_request_get_all( $_path, $filter = array( ) ) {
 		$inflector = new Inflector();
 		$regex = '~' . self::ee_api_namespace_for_regex . '(.*)~';
 		$success = preg_match( $regex, $_path, $matches );
@@ -126,7 +153,7 @@ class EED_REST_API extends EED_Module {
 				return new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) );
 			}
 			$model = EE_Registry::instance()->load_model( $model_name_singular );
-			return $this->get_entities_from_model( $model, $filter );
+			return self::get_entities_from_model( $model, $filter );
 		} else {
 			return new WP_Error( 'endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
 		}
@@ -139,7 +166,7 @@ class EED_REST_API extends EED_Module {
 	 * @param type $id
 	 * @return array|WP_Error
 	 */
-	public function handle_request_get_one( $_path, $id ) {
+	public static function handle_request_get_one( $_path, $id ) {
 		$inflector = new Inflector();
 		$regex = '~' . self::ee_api_namespace_for_regex . '(.*)/(.*)~';
 		$success = preg_match( $regex, $_path, $matches );
@@ -150,7 +177,7 @@ class EED_REST_API extends EED_Module {
 				return new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) );
 			}
 			$model = EE_Registry::instance()->load_model( $model_name_singular );
-			return $this->get_entity_from_model( $model, $id );
+			return self::get_entity_from_model( $model, $id );
 		}
 	}
 
@@ -163,7 +190,7 @@ class EED_REST_API extends EED_Module {
 	 * @param array $filter
 	 * @return array|WP_Error
 	 */
-	public function handle_request_get_related( $_path, $id, $filter = array() ) {
+	public static function handle_request_get_related( $_path, $id, $filter = array() ) {
 		$inflector = new Inflector();
 		$regex = '~' . self::ee_api_namespace_for_regex . '(.*)/(.*)/(.*)~';
 		$success = preg_match( $regex, $_path, $matches );
@@ -184,14 +211,14 @@ class EED_REST_API extends EED_Module {
 			//duplicate how we find related model objects in EE_Base_Class::get_many_related()
 			$filter[ 'where' ][ $main_model_name_singular . '.' . $model->primary_key_name() ] = $id;
 			$filter[ 'default_where_conditions' ] = 'none';
-			$related_entities = $this->get_entities_from_model( $relation_settings->get_other_model(), $filter );
+			$related_entities = self::get_entities_from_model( $relation_settings->get_other_model(), $filter );
 			if( $relation_settings instanceof EE_Belongs_To_Relation ) {
 				//just reutrn one
 				return array_shift( $related_entities );
 			}else{
 				return $related_entities;
 			}
-			return $this->get_entity_from_model( $model, $id );
+			return self::get_entity_from_model( $model, $id );
 		}
 	}
 
@@ -203,8 +230,8 @@ class EED_REST_API extends EED_Module {
 	 * @param array $filter
 	 * @return array
 	 */
-	public function get_entities_from_model( $model, $filter ) {
-		$query_params = $this->create_model_params( $model, $filter );
+	public static function get_entities_from_model( $model, $filter ) {
+		$query_params = self::create_model_params( $model, $filter );
 		$results = $model->get_all_wpdb_results( $query_params );
 		$nice_results = array( );
 		foreach ( $results as $result ) {
@@ -219,7 +246,7 @@ class EED_REST_API extends EED_Module {
 	 * @param string $id
 	 * @return array
 	 */
-	public function get_entity_from_model( $model, $id ) {
+	public static function get_entity_from_model( $model, $id ) {
 		$model_obj = $model->get_one_by_ID( $id );
 		if ( $model_obj ) {
 			return $model_obj->model_field_array();
@@ -236,7 +263,7 @@ class EED_REST_API extends EED_Module {
 	 * @param type $filter
 	 * @return array like what EEM_Base::get_all() expects
 	 */
-	public function create_model_params( $model, $filter ) {
+	public static function create_model_params( $model, $filter ) {
 		$model_query_params = array( );
 		if ( isset( $filter[ 'where' ] ) ) {
 			//@todo: no good for permissions

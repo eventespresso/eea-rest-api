@@ -60,6 +60,9 @@ Class  EE_REST_API extends EE_Addon {
 					),
 			)
 		);
+		//update the routes wp option whenever any other EE addon is updated or activated, or core is updated
+		add_action( 'AHEE__EE_System__perform_activations_upgrades_and_migrations', array( 'EED_REST_API', 'save_ee_routes' ) );
+		add_action( 'AHEE__EE_Addon__initialize_default_data__begin', array( 'EED_REST_API', 'save_ee_routes' ) );
 	}
 
 
@@ -93,6 +96,17 @@ Class  EE_REST_API extends EE_Addon {
 			array_unshift( $links, '<a href="admin.php?page=espresso_rest_api">' . __('Settings') . '</a>' );
 		}
 		return $links;
+	}
+
+	/**
+	 * Initialize the routes option upon installation. This way we don't have to
+	 * go through the somewhat lengthy process of initializing the routes on every request
+	 * (instead we just do it when this addon is activated or upgraded, or when any other
+	 * addon or core is activated or upgraded)
+	 */
+	public function initialize_db() {
+		parent::initialize_db();
+		EED_REST_API::save_ee_routes();
 	}
 
 
