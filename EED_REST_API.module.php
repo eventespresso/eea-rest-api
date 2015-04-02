@@ -25,14 +25,6 @@
 class EED_REST_API extends EED_Module {
 
 	/**
-	 * @var 		bool
-	 * @access 	public
-	 */
-	public static $shortcode_active = FALSE;
-
-
-
-	/**
 	 * @return EED_REST_API
 	 */
 	public static function instance() {
@@ -58,9 +50,6 @@ class EED_REST_API extends EED_Module {
 	  *  @return 	void
 	  */
 	 public static function set_hooks_admin() {
-		 // ajax hooks
-		 add_action( 'wp_ajax_get_rest_api', array( 'EED_REST_API', 'get_rest_api' ));
-		 add_action( 'wp_ajax_nopriv_get_rest_api', array( 'EED_REST_API', 'get_rest_api' ));
 		 self::set_hooks_both();
 	 }
 
@@ -71,15 +60,6 @@ class EED_REST_API extends EED_Module {
 	 public static function register_routes( $routes ){
 		$instance = self::instance();
 		$routes = array_merge( $routes, $instance->_register_model_routes() );
-//		$routes['/myplugin/mytypeitems'] = array(
-//			array( array( $this, 'get_posts'), WP_JSON_Server::READABLE ),
-//			array( array( $this, 'new_post'), WP_JSON_Server::CREATABLE | WP_JSON_Server::ACCEPT_JSON ),
-//		);
-//		$routes['/myplugin/mytypeitems/(?P<id>\d+)'] = array(
-//			array( array( $this, 'get_post'), WP_JSON_Server::READABLE ),
-//			array( array( $this, 'edit_post'), WP_JSON_Server::EDITABLE | WP_JSON_Server::ACCEPT_JSON ),
-//			array( array( $this, 'delete_post'), WP_JSON_Server::DELETABLE ),
-//		);
 		return $routes;
 	 }
 
@@ -197,54 +177,7 @@ class EED_REST_API extends EED_Module {
 	  * @return    void
 	  */
 	 public function run( $WP ) {
-		 add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ));
 	 }
-
-
-
-
-
-
-	/**
-	 * 	enqueue_scripts - Load the scripts and css
-	 *
-	 *  @access 	public
-	 *  @return 	void
-	 */
-	public function enqueue_scripts() {
-		//Check to see if the rest_api css file exists in the '/uploads/espresso/' directory
-		if ( is_readable( EVENT_ESPRESSO_UPLOAD_DIR . "css/rest_api.css")) {
-			//This is the url to the css file if available
-			wp_register_style( 'espresso_rest_api', EVENT_ESPRESSO_UPLOAD_URL . 'css/espresso_rest_api.css' );
-		} else {
-			// EE rest_api style
-			wp_register_style( 'espresso_rest_api', EE_REST_API_URL . 'css/espresso_rest_api.css' );
-		}
-		// rest_api script
-		wp_register_script( 'espresso_rest_api', EE_REST_API_URL . 'scripts/espresso_rest_api.js', array( 'jquery' ), EE_REST_API_VERSION, TRUE );
-
-		// is the shortcode or widget in play?
-		if ( EED_REST_API::$shortcode_active ) {
-			wp_enqueue_style( 'espresso_rest_api' );
-			wp_enqueue_script( 'espresso_rest_api' );
-		}
-	}
-
-
-
-
-	/**
-	 *		@ override magic methods
-	 *		@ return void
-	 */
-	public function __set($a,$b) { return FALSE; }
-	public function __get($a) { return FALSE; }
-	public function __isset($a) { return FALSE; }
-	public function __unset($a) { return FALSE; }
-	public function __clone() { return FALSE; }
-	public function __wakeup() { return FALSE; }
-	public function __destruct() { return FALSE; }
-
  }
 // End of file EED_REST_API.module.php
 // Location: /wp-content/plugins/eea-rest-api/EED_REST_API.module.php
