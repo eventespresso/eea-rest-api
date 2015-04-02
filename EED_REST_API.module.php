@@ -24,6 +24,9 @@
  */
 class EED_REST_API extends EED_Module {
 
+	const ee_api_namespace = '/ee4/v2/';
+	const ee_api_namespace_for_regex = '\/ee4\/v2\/';
+
 	/**
 	 * @return EED_REST_API
 	 */
@@ -68,8 +71,13 @@ class EED_REST_API extends EED_Module {
 		 $model_routes = array();
 		 $inflector = new Inflector();
 		 foreach( $models_to_register as $model_name => $model_classname ){
-			 $model_routes['/ee4/' . strtolower( $inflector->pluralize( $model_name ) ) ] = array(
+			 //yes we could jsut register one route for ALL models, but then they wouldn't show up in the index
+			 $model_routes[ self::ee_api_namespace . strtolower( $inflector->pluralize( $model_name ) ) ] = array(
 				 array( array( $this, 'handle_request_get_all' ), WP_JSON_Server::READABLE ),
+				 //others to go here...
+				 );
+			 $model_routes[  self::ee_api_namespace . strtolower( $inflector->pluralize( $model_name ) ) . '/(?P<id>\d+)' ] = array(
+				 array( array( $this, 'handle_request_get_one' ), WP_JSON_Server::READABLE ),
 				 //others to go here...
 				 );
 		 }
@@ -83,10 +91,9 @@ class EED_REST_API extends EED_Module {
 	  * @param type $_headers
 	  * @return array
 	  */
-	 public function handle_request_get_all( $_path,
-			 $filter=array() ) {
+	 public function handle_request_get_all( $_path, $filter=array() ) {
 		$inflector = new Inflector();
-		$regex = '~\/ee4\/(.*)~';
+		$regex = '~' . self::ee_api_namespace_for_regex .'(.*)~';
 		$success = preg_match( $regex, $_path, $matches );
 		if( is_array( $matches ) && isset( $matches[1] )){
 			$model_name_plural = $matches[1];
@@ -98,6 +105,21 @@ class EED_REST_API extends EED_Module {
 			return $this->get_entities_from_model( $model, $filter );
 		}else{
 			return new WP_Error('endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
+		}
+	 }
+
+	 public function handle_request_get_one( $_path, $id ) {
+		$inflector = new Inflector();
+		$regex = '~' . self::ee_api_namespace_for_regex .'(.*)/(.*)~';
+		$success = preg_match( $regex, $_path, $matches );
+		if( is_array( $matches ) && isset( $matches[1] )){
+			$model_name_plural = $matches[1];
+			$model_name_singular = str_replace(' ', '_', $inflector->humanize($inflector->singularize($model_name_plural), 'all' ) );
+			if( ! EE_Registry::instance()->is_model_name( $model_name_singular ) ) {
+				return new WP_Error('endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) );
+			}
+			$model = EE_Registry::instance()->load_model( $model_name_singular );
+			return $this->get_entity_from_model( $model, $id );
 		}
 	 }
 
@@ -115,6 +137,21 @@ class EED_REST_API extends EED_Module {
 			$nice_results[] = $model->_deduce_fields_n_values_from_cols_n_values( $result );
 		}
 		return $nice_results;
+	 }
+
+	 /**
+	  * Gets the one model object with the specified id for the specified model
+	  * @param EEM_Base $model
+	  * @param string $id
+	  * @return array
+	  */
+	 public function get_entity_from_model( $model, $id ) {
+		 $model_obj =  $model->get_one_by_ID( $id );
+		 if( $model_obj ){
+			return $model_obj->model_field_array();
+		 }else{
+			 return new WP_Error( 'json_object_invalid_id', __( 'Invalid model object ID.' ), array( 'status' => 404 ) );
+		 }
 	 }
 
 	 /**
