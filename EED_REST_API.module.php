@@ -235,7 +235,7 @@ class EED_REST_API extends EED_Module {
 		$results = $model->get_all_wpdb_results( $query_params );
 		$nice_results = array( );
 		foreach ( $results as $result ) {
-			$nice_results[ ] = self::deduce_fields_n_values_from_cols_n_values_except_fks( $model, $result );
+			$nice_results[ ] = self::create_entities_from_wpdb_results( $model, $result );
 		}
 		return $nice_results;
 	}
@@ -255,9 +255,9 @@ class EED_REST_API extends EED_Module {
 		$results = $relation->get_other_model()->get_all_wpdb_results( $query_params );
 		$nice_results = array();
 		foreach( $results as $result ) {
-			$nice_result = self::deduce_fields_n_values_from_cols_n_values_except_fks( $relation->get_other_model(), $result );
+			$nice_result = self::create_entities_from_wpdb_results( $relation->get_other_model(), $result );
 			if( $relation instanceof EE_HABTM_Relation ) {
-				$nice_result = array_merge( $nice_result, self::deduce_fields_n_values_from_cols_n_values_except_fks( $relation->get_join_model(), $result ) );
+				$nice_result = array_merge( $nice_result, self::create_entities_from_wpdb_results( $relation->get_join_model(), $result ) );
 			}
 			$nice_results[] = $nice_result;
 		}
@@ -265,20 +265,23 @@ class EED_REST_API extends EED_Module {
 	}
 
 	/**
-	 *
+	 * Changes database results into REST API entities
 	 * @param EEM_Base $model
 	 * @param array $db_row
 	 */
-	public static function deduce_fields_n_values_from_cols_n_values_except_fks( $model, $db_row ) {
+	public static function create_entities_from_wpdb_results( $model, $db_row ) {
 		$result = $model->_deduce_fields_n_values_from_cols_n_values( $db_row );
 		foreach( $result as $field_name => $field_value ) {
-			foreach( $model->field_settings() as $field_name => $field_obj ) {
-				if( $field_obj instanceof EE_Foreign_Key_Field_Base || $field_obj instanceof EE_Any_Foreign_Model_Name_Field ) {
-					unset( $result[ $field_name ] );
-				}
+			$field_obj = $model->field_settings_for($field_name);
+			if( $field_obj instanceof EE_Foreign_Key_Field_Base || $field_obj instanceof EE_Any_Foreign_Model_Name_Field ) {
+				unset( $result[ $field_name ] );
 			}
-			$result = apply_filters( 'FHEE__EED_REST_API__deduce_fields_n_values_form_cols_n_values_except_fks', $result, $model );
+			if( $field_obj instanceof EE_Post_Content_Field ){
+				$result[ $field_name . '_raw' ] = $field_value;
+				$result[ $field_name ] = do_shortcode( $field_value );
+			}
 		}
+		$result = apply_filters( 'FHEE__EED_REST_API__deduce_fields_n_values_form_cols_n_values_except_fks', $result, $model );
 		return $result;
 	}
 
