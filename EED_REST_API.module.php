@@ -274,14 +274,24 @@ class EED_REST_API extends EED_Module {
 	 */
 	public static function create_entity_from_wpdb_result( $model, $db_row, $include ) {
 		$result = $model->_deduce_fields_n_values_from_cols_n_values( $db_row );
-		foreach( $result as $field_name => $field_value ) {
+		$timezone = json_get_timezone();
+		foreach( $result as $field_name => $raw_field_value ) {
 			$field_obj = $model->field_settings_for($field_name);
+			$field_value = $field_obj->prepare_for_set_from_db( $raw_field_value );
 			if( $field_obj instanceof EE_Foreign_Key_Field_Base || $field_obj instanceof EE_Any_Foreign_Model_Name_Field ) {
 				unset( $result[ $field_name ] );
-			}
-			if( $field_obj instanceof EE_Post_Content_Field ){
-				$result[ $field_name . '_raw' ] = $field_value;
-				$result[ $field_name ] = do_shortcode( $field_value );
+			}elseif( $field_obj instanceof EE_Post_Content_Field ){
+				$result[ $field_name . '_raw' ] = $field_obj->prepare_for_get( $field_value );
+				$result[ $field_name ] = $field_obj->prepare_for_pretty_echoing( $field_value );
+			}elseif( $field_obj instanceof EE_Enum_Integer_Field ||
+					$field_obj instanceof EE_Enum_Text_Field ||
+					$field_obj instanceof EE_Money_Field ) {
+				$result[ $field_name ] = $field_obj->prepare_for_get( $field_value );
+				$result[ $field_name . '_pretty' ] = $field_obj->prepare_for_pretty_echoing( $field_value );
+			}elseif( $field_obj instanceof EE_Datetime_Field ){
+				$result[ $field_name ] = json_mysql_to_rfc3339( $raw_field_value );
+			}else{
+				$result[ $field_name ] = $field_obj->prepare_for_get( $field_value );
 			}
 		}
 		//add links to related data
