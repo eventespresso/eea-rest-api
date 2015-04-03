@@ -118,11 +118,7 @@ class EED_REST_API extends EED_Module {
 			);
 			$model = EE_Registry::instance()->load_model( $model_classname );
 			foreach ( $model->relation_settings() as $relation_name => $relation_obj ) {
-				if ( $relation_obj instanceof EE_Belongs_To_Relation ) {
-					$related_model_name_endpoint_part = strtolower( $relation_name );
-				} else {
-					$related_model_name_endpoint_part = Inflector::pluralize_and_lower( ( $relation_name ) );
-				}
+				$related_model_name_endpoint_part = self::_get_related_entity_name( $relation_name, $relation_obj );
 				$model_routes[ self::ee_api_namespace . Inflector::pluralize_and_lower( $model_name ) . '/(?P<id>\d+)/' . $related_model_name_endpoint_part ] = array(
 					array( array( 'EED_REST_API', 'handle_request_get_related' ), WP_JSON_Server::READABLE )
 						//@todo: also handle POST, PUT
@@ -141,7 +137,7 @@ class EED_REST_API extends EED_Module {
 	 * @param string $include
 	 * @return array
 	 */
-	public static function handle_request_get_all( $_path, $filter = array(), $include = null ) {
+	public static function handle_request_get_all( $_path, $filter = array(), $include = '*' ) {
 		$inflector = new Inflector();
 		$regex = '~' . self::ee_api_namespace_for_regex . '(.*)~';
 		$success = preg_match( $regex, $_path, $matches );
@@ -166,7 +162,7 @@ class EED_REST_API extends EED_Module {
 	 * @param string $includee
 	 * @return array|WP_Error
 	 */
-	public static function handle_request_get_one( $_path, $id, $include = null ) {
+	public static function handle_request_get_one( $_path, $id, $include = '*' ) {
 		$inflector = new Inflector();
 		$regex = '~' . self::ee_api_namespace_for_regex . '(.*)/(.*)~';
 		$success = preg_match( $regex, $_path, $matches );
@@ -190,7 +186,7 @@ class EED_REST_API extends EED_Module {
 	 * @param array $filter
 	 * @return array|WP_Error
 	 */
-	public static function handle_request_get_related( $_path, $id, $filter = array(), $include = null ) {
+	public static function handle_request_get_related( $_path, $id, $filter = array(), $include = '*' ) {
 		$regex = '~' . self::ee_api_namespace_for_regex . '(.*)/(.*)/(.*)~';
 		$success = preg_match( $regex, $_path, $matches );
 		if ( is_array( $matches ) && isset( $matches[ 1 ] ) && isset( $matches[3] ) ) {
@@ -207,10 +203,7 @@ class EED_REST_API extends EED_Module {
 
 			$model = EE_Registry::instance()->load_model( $main_model_name_singular );
 			$relation_settings = $model->related_settings_for( $related_model_name_singular );
-			//duplicate how we find related model objects in EE_Base_Class::get_many_related()
-			$filter[ 'where' ][ $main_model_name_singular . '.' . $model->primary_key_name() ] = $id;
-			$filter[ 'default_where_conditions' ] = 'none';
-			return self::get_entities_from_relation( $relation_settings, $filter, $include );
+			return self::get_entities_from_relation( $id, $relation_settings, $filter, $include );
 		}
 	}
 
@@ -239,17 +232,20 @@ class EED_REST_API extends EED_Module {
 	 * The same as EED_REST_API::get_entities_from_model(), except if the relation
 	 * is a HABTM relation, in which case it merges any non-foreign-key fields from
 	 * the join-model-object into the results
+	 * @param string $id the ID of the thing we are fetching related stuff from
 	 * @param EE_Model_Relation_Base $relation
 	 * @param array $filter
 	 * @param string $include specific fields to include (possibly prefixed by model name) or related models to include
 	 * @return array
 	 */
-	public static function get_entities_from_relation( $relation, $filter, $include ) {
+	public static function get_entities_from_relation( $id,  $relation, $filter, $include ) {
 		$query_params = self::create_model_query_params( $relation->get_other_model(), $filter );
+		$query_params[0][ $relation->get_this_model()->get_this_model_name() . '.' . $relation->get_this_model()->primary_key_name() ] = $id;
+		$query_params[ 'default_where_conditions' ] = 'none';
 		$results = $relation->get_other_model()->get_all_wpdb_results( $query_params );
 		$nice_results = array();
 		foreach( $results as $result ) {
-			$nice_result = self::create_entity_from_wpdb_result( $relation->get_other_model(), $result );
+			$nice_result = self::create_entity_from_wpdb_result( $relation->get_other_model(), $result, $include );
 			if( $relation instanceof EE_HABTM_Relation ) {
 				//put the unusual stuff (properties from the HABTM relation) first, and make sure
 				//if there are conflicts we prefer the properties from the main model
@@ -291,22 +287,43 @@ class EED_REST_API extends EED_Module {
 			'self' => json_url( self::ee_api_namespace . Inflector::pluralize_and_lower( $model->get_this_model_name() ) . '/' . $result[ $model->primary_key_name() ]
 		) );
 
-		foreach( $model->relation_settings() as $relation_name => $relation_obj ) {
-
-			if( $relation_obj instanceof EE_Belongs_To_Relation ) {
-				$related_model_part = strtolower( $relation_name );
-			}else{
-				$related_model_part = Inflector::pluralize_and_lower( $relation_name );
-			}
-			$result['meta']['links'][$related_model_part] = json_url( self::ee_api_namespace . Inflector::pluralize_and_lower( $model->get_this_model_name() ) . '/' . $result[ $model->primary_key_name() ] . '/' . $related_model_part );
-		}
 		//filter fields if specified
 		$includes_for_this_model = self::extract_includes_for_this_model( $include );
 		if( ! empty( $includes_for_this_model ) ) {
+			if( $model->has_primary_key_field() ) {
+				//always include the primary key
+				$includes_for_this_model[] = $model->primary_key_name();
+			}
 			$result = array_intersect_key( $result, array_flip( $includes_for_this_model ) );
+		}
+		//add meta links and possibly include related models
+		foreach( $model->relation_settings() as $relation_name => $relation_obj ) {
+			$related_model_part = self::_get_related_entity_name( $relation_name, $relation_obj );
+			if( empty( $includes_for_this_model ) || isset( $includes_for_this_model['meta'] ) ) {
+				$result['meta']['links'][$related_model_part] = json_url( self::ee_api_namespace . Inflector::pluralize_and_lower( $model->get_this_model_name() ) . '/' . $result[ $model->primary_key_name() ] . '/' . $related_model_part );
+			}
+			$related_fields_to_include = self::extract_includes_for_this_model( $include, $relation_name );
+			if( $related_fields_to_include ) {
+				$result[ $related_model_part ] = self::get_entities_from_relation( $result[ $model->primary_key_name() ], $relation_obj, array(), implode(',',self::extract_includes_for_this_model( $include, $relation_name ) ) );
+			}
 		}
 		$result = apply_filters( 'FHEE__EED_REST_API__deduce_fields_n_values_form_cols_n_values_except_fks', $result, $model );
 		return $result;
+	}
+
+	/**
+	 * Gets the correct lowercase name for the relation in the API according
+	 * to the relation's type
+	 * @param string $relation_name
+	 * @param EE_Model_Relation_Base $relation_obj
+	 * @return string
+	 */
+	protected static function _get_related_entity_name( $relation_name, $relation_obj ){
+		if( $relation_obj instanceof EE_Belongs_To_Relation ) {
+			return strtolower( $relation_name );
+		}else{
+			return Inflector::pluralize_and_lower( $relation_name );
+		}
 	}
 
 //	public function
@@ -374,10 +391,11 @@ class EED_REST_API extends EED_Module {
 	 * @param type $include_string
 	 * @param type $model_name
 	 * @return array of fields for this model. If $model_name is provided, then
-	 * the fields for that model, with the model's name removed from each
+	 * the fields for that model, with the model's name removed from each.
+	 * Returns FALSE if
 	 */
 	public static function extract_includes_for_this_model( $include_string, $model_name = null ) {
-		if( $include_string === null ) {
+		if( $include_string === '*' ) {
 			return array();
 		}
 		$includes = explode( ',', $include_string );
