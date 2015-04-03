@@ -106,14 +106,13 @@ class EED_REST_API extends EED_Module {
 	protected function _register_model_routes() {
 		$models_to_register = EE_Registry::instance()->non_abstract_db_models;
 		$model_routes = array( );
-		$inflector = new Inflector();
 		foreach ( $models_to_register as $model_name => $model_classname ) {
 			//yes we could jsut register one route for ALL models, but then they wouldn't show up in the index
-			$model_routes[ self::ee_api_namespace . strtolower( $inflector->pluralize( $model_name ) ) ] = array(
+			$model_routes[ self::ee_api_namespace . Inflector::pluralize_and_lower( $model_name ) ] = array(
 				array( array( 'EED_REST_API', 'handle_request_get_all' ), WP_JSON_Server::READABLE ),
 					//@todo: also handle POST, PUT
 			);
-			$model_routes[ self::ee_api_namespace . strtolower( $inflector->pluralize( $model_name ) ) . '/(?P<id>\d+)' ] = array(
+			$model_routes[ self::ee_api_namespace . Inflector::pluralize_and_lower( $model_name ) . '/(?P<id>\d+)' ] = array(
 				array( array( 'EED_REST_API', 'handle_request_get_one' ), WP_JSON_Server::READABLE ),
 					//@todo: also handle PUT, DELETE,
 			);
@@ -122,9 +121,9 @@ class EED_REST_API extends EED_Module {
 				if ( $relation_obj instanceof EE_Belongs_To_Relation ) {
 					$related_model_name_endpoint_part = strtolower( $relation_name );
 				} else {
-					$related_model_name_endpoint_part = strtolower( $inflector->pluralize( ( $relation_name ) ) );
+					$related_model_name_endpoint_part = Inflector::pluralize_and_lower( ( $relation_name ) );
 				}
-				$model_routes[ self::ee_api_namespace . strtolower( $inflector->pluralize( $model_name ) ) . '/(?P<id>\d+)/' . $related_model_name_endpoint_part ] = array(
+				$model_routes[ self::ee_api_namespace . Inflector::pluralize_and_lower( $model_name ) . '/(?P<id>\d+)/' . $related_model_name_endpoint_part ] = array(
 					array( array( 'EED_REST_API', 'handle_request_get_related' ), WP_JSON_Server::READABLE )
 						//@todo: also handle POST, PUT
 				);
@@ -191,17 +190,16 @@ class EED_REST_API extends EED_Module {
 	 * @return array|WP_Error
 	 */
 	public static function handle_request_get_related( $_path, $id, $filter = array() ) {
-		$inflector = new Inflector();
 		$regex = '~' . self::ee_api_namespace_for_regex . '(.*)/(.*)/(.*)~';
 		$success = preg_match( $regex, $_path, $matches );
 		if ( is_array( $matches ) && isset( $matches[ 1 ] ) && isset( $matches[3] ) ) {
 			$main_model_name_plural = $matches[ 1 ];
-			$main_model_name_singular = str_replace( ' ', '_', $inflector->humanize( $inflector->singularize( $main_model_name_plural ), 'all' ) );
+			$main_model_name_singular = str_replace( ' ', '_', Inflector::humanize( Inflector::singularize( $main_model_name_plural ), 'all' ) );
 			if ( ! EE_Registry::instance()->is_model_name( $main_model_name_singular ) ) {
 				return new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $main_model_name_singular ) );
 			}
 			$related_model_name_maybe_plural = $matches[ 3 ];
-			$related_model_name_singular = str_replace( ' ', '_', $inflector->humanize( $inflector->singularize( $related_model_name_maybe_plural ), 'all' ) );
+			$related_model_name_singular = str_replace( ' ', '_', Inflector::humanize( Inflector::singularize( $related_model_name_maybe_plural ), 'all' ) );
 			if ( ! EE_Registry::instance()->is_model_name( $related_model_name_singular ) ) {
 				return new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $related_model_name_singular ) );
 			}
@@ -257,7 +255,13 @@ class EED_REST_API extends EED_Module {
 		foreach( $results as $result ) {
 			$nice_result = self::create_entities_from_wpdb_results( $relation->get_other_model(), $result );
 			if( $relation instanceof EE_HABTM_Relation ) {
-				$nice_result = array_merge( $nice_result, self::create_entities_from_wpdb_results( $relation->get_join_model(), $result ) );
+				//put the unusual stuff (properties from the HABTM relation) first, and make sure
+				//if there are conflicts we prefer the properties from the main model
+				$join_model_result = self::create_entities_from_wpdb_results( $relation->get_join_model(), $result );
+				$joined_result = array_merge( $nice_result, $join_model_result );
+				//but keep the meta stuff from the main model
+				$joined_result['meta'] = $nice_result['meta'];
+				$nice_result = $joined_result;
 			}
 			$nice_results[] = $nice_result;
 		}
@@ -280,6 +284,17 @@ class EED_REST_API extends EED_Module {
 				$result[ $field_name . '_raw' ] = $field_value;
 				$result[ $field_name ] = do_shortcode( $field_value );
 			}
+		}
+		//add links to related data
+		$result['meta']['links'] = array();
+		foreach( $model->relation_settings() as $relation_name => $relation_obj ) {
+
+			if( $relation_obj instanceof EE_Belongs_To_Relation ) {
+				$related_model_part = strtolower( $relation_name );
+			}else{
+				$related_model_part = Inflector::pluralize_and_lower( $relation_name );
+			}
+			$result['meta']['links'][$related_model_part] = json_url( self::ee_api_namespace . Inflector::pluralize_and_lower( $model->get_this_model_name() ) . '/' . $result[ $model->primary_key_name() ] . '/' . $related_model_part );
 		}
 		$result = apply_filters( 'FHEE__EED_REST_API__deduce_fields_n_values_form_cols_n_values_except_fks', $result, $model );
 		return $result;
