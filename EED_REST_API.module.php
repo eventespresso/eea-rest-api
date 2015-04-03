@@ -249,10 +249,12 @@ class EED_REST_API extends EED_Module {
 			if( $relation instanceof EE_HABTM_Relation ) {
 				//put the unusual stuff (properties from the HABTM relation) first, and make sure
 				//if there are conflicts we prefer the properties from the main model
-				$join_model_result = self::create_entity_from_wpdb_result( $relation->get_join_model(), $result );
+				$join_model_result = self::create_entity_from_wpdb_result( $relation->get_join_model(), $result, $include );
 				$joined_result = array_merge( $nice_result, $join_model_result );
 				//but keep the meta stuff from the main model
-				$joined_result['meta'] = $nice_result['meta'];
+				if( isset( $nice_result['meta'] ) ){
+					$joined_result['meta'] = $nice_result['meta'];
+				}
 				$nice_result = $joined_result;
 			}
 			$nice_results[] = $nice_result;
@@ -407,13 +409,15 @@ class EED_REST_API extends EED_Module {
 					//found the model name at the exact start
 					$field_sans_model_name = str_replace( $model_name . '.', '', $field_to_include );
 					$extracted_fields_to_include[] = $field_sans_model_name;
+				}elseif( $field_to_include == $model_name ){
+					$extracted_fields_to_include[] = '*';
 				}
 			}
 		}else{
 			//look for ones with no period
 			foreach( $includes as $field_to_include ) {
 				$field_to_include = trim( $field_to_include );
-				if( strpos($field_to_include, '.' ) === FALSE ) {
+				if( strpos($field_to_include, '.' ) === FALSE && ! EE_Registry::instance()->is_model_name( $field_to_include ) ) {
 					$extracted_fields_to_include[] = $field_to_include;
 				}
 			}
