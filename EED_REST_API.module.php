@@ -286,7 +286,10 @@ class EED_REST_API extends EED_Module {
 			}
 		}
 		//add links to related data
-		$result['meta']['links'] = array();
+		$result['meta']['links'] = array(
+			'self' => json_url( self::ee_api_namespace . Inflector::pluralize_and_lower( $model->get_this_model_name() ) . '/' . $result[ $model->primary_key_name() ]
+		) );
+
 		foreach( $model->relation_settings() as $relation_name => $relation_obj ) {
 
 			if( $relation_obj instanceof EE_Belongs_To_Relation ) {
