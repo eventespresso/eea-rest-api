@@ -3,6 +3,8 @@ EE4 REST API
 
 An Event Espresso 4 addon for providing an RESTful interface for event espresso's data.
 
+It currently only works with a non-released version of EE4.6 (FET-7914-core-changes-for-api)
+
 This plugin/addon needs to be uploaded to the "/wp-content/plugins/" directory on your server or installed using the WordPress plugins installer.
 
 The general roadmap is:
