@@ -211,7 +211,7 @@ class EED_REST_API extends EED_Module {
 			//duplicate how we find related model objects in EE_Base_Class::get_many_related()
 			$filter[ 'where' ][ $main_model_name_singular . '.' . $model->primary_key_name() ] = $id;
 			$filter[ 'default_where_conditions' ] = 'none';
-			$related_entities = self::get_entities_from_model( $relation_settings->get_other_model(), $filter );
+			$related_entities = self::get_entities_from_relation( $relation_settings, $filter );
 			if( $relation_settings instanceof EE_Belongs_To_Relation ) {
 				//just reutrn one
 				return array_shift( $related_entities );
@@ -235,10 +235,54 @@ class EED_REST_API extends EED_Module {
 		$results = $model->get_all_wpdb_results( $query_params );
 		$nice_results = array( );
 		foreach ( $results as $result ) {
-			$nice_results[ ] = $model->_deduce_fields_n_values_from_cols_n_values( $result );
+			$nice_results[ ] = self::deduce_fields_n_values_from_cols_n_values_except_fks( $model, $result );
 		}
 		return $nice_results;
 	}
+
+	/**
+	 * Gets the coollection for given relation object
+	 *
+	 * The same as EED_REST_API::get_entities_from_model(), except if the relation
+	 * is a HABTM relation, in which case it merges any non-foreign-key fields from
+	 * the join-model-object into the results
+	 * @param EE_Model_Relation_Base $relation
+	 * @param arrray $filter
+	 * @return array
+	 */
+	public static function get_entities_from_relation( $relation, $filter ) {
+		$query_params = self::create_model_params( $relation->get_other_model(), $filter );
+		$results = $relation->get_other_model()->get_all_wpdb_results( $query_params );
+		$nice_results = array();
+		foreach( $results as $result ) {
+			$nice_result = self::deduce_fields_n_values_from_cols_n_values_except_fks( $relation->get_other_model(), $result );
+			if( $relation instanceof EE_HABTM_Relation ) {
+				$nice_result = array_merge( $nice_result, self::deduce_fields_n_values_from_cols_n_values_except_fks( $relation->get_join_model(), $result ) );
+			}
+			$nice_results[] = $nice_result;
+		}
+		return $nice_results;
+	}
+
+	/**
+	 *
+	 * @param EEM_Base $model
+	 * @param array $db_row
+	 */
+	public static function deduce_fields_n_values_from_cols_n_values_except_fks( $model, $db_row ) {
+		$result = $model->_deduce_fields_n_values_from_cols_n_values( $db_row );
+		foreach( $result as $field_name => $field_value ) {
+			foreach( $model->field_settings() as $field_name => $field_obj ) {
+				if( $field_obj instanceof EE_Foreign_Key_Field_Base || $field_obj instanceof EE_Any_Foreign_Model_Name_Field ) {
+					unset( $result[ $field_name ] );
+				}
+			}
+			$result = apply_filters( 'FHEE__EED_REST_API__deduce_fields_n_values_form_cols_n_values_except_fks', $result, $model );
+		}
+		return $result;
+	}
+
+
 
 	/**
 	 * Gets the one model object with the specified id for the specified model
