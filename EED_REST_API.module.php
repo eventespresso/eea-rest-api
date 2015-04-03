@@ -136,12 +136,12 @@ class EED_REST_API extends EED_Module {
 
 	/**
 	 * Handles requests to get all (or a filtered subset) of entities for a particular model
-	 * @param type $_method
-	 * @param type $_path
-	 * @param type $_headers
+	 * @param string $_path
+	 * @param array $filter
+	 * @param string $include
 	 * @return array
 	 */
-	public static function handle_request_get_all( $_path, $filter = array( ) ) {
+	public static function handle_request_get_all( $_path, $filter = array(), $include = null ) {
 		$inflector = new Inflector();
 		$regex = '~' . self::ee_api_namespace_for_regex . '(.*)~';
 		$success = preg_match( $regex, $_path, $matches );
@@ -152,7 +152,7 @@ class EED_REST_API extends EED_Module {
 				return new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) );
 			}
 			$model = EE_Registry::instance()->load_model( $model_name_singular );
-			return self::get_entities_from_model( $model, $filter );
+			return self::get_entities_from_model( $model, $filter, $include );
 		} else {
 			return new WP_Error( 'endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
 		}
@@ -161,11 +161,12 @@ class EED_REST_API extends EED_Module {
 
 	/**
 	 * Gets a single entity related to the model indicated in the path and its id
-	 * @param type $_path
-	 * @param type $id
+	 * @param string $_path
+	 * @param string $id
+	 * @param string $includee
 	 * @return array|WP_Error
 	 */
-	public static function handle_request_get_one( $_path, $id ) {
+	public static function handle_request_get_one( $_path, $id, $include = null ) {
 		$inflector = new Inflector();
 		$regex = '~' . self::ee_api_namespace_for_regex . '(.*)/(.*)~';
 		$success = preg_match( $regex, $_path, $matches );
@@ -176,7 +177,7 @@ class EED_REST_API extends EED_Module {
 				return new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) );
 			}
 			$model = EE_Registry::instance()->load_model( $model_name_singular );
-			return self::get_entity_from_model( $model, $id );
+			return self::get_entity_from_model( $model, $id, $include );
 		}
 	}
 
@@ -189,7 +190,7 @@ class EED_REST_API extends EED_Module {
 	 * @param array $filter
 	 * @return array|WP_Error
 	 */
-	public static function handle_request_get_related( $_path, $id, $filter = array() ) {
+	public static function handle_request_get_related( $_path, $id, $filter = array(), $include = null ) {
 		$regex = '~' . self::ee_api_namespace_for_regex . '(.*)/(.*)/(.*)~';
 		$success = preg_match( $regex, $_path, $matches );
 		if ( is_array( $matches ) && isset( $matches[ 1 ] ) && isset( $matches[3] ) ) {
@@ -209,14 +210,7 @@ class EED_REST_API extends EED_Module {
 			//duplicate how we find related model objects in EE_Base_Class::get_many_related()
 			$filter[ 'where' ][ $main_model_name_singular . '.' . $model->primary_key_name() ] = $id;
 			$filter[ 'default_where_conditions' ] = 'none';
-			$related_entities = self::get_entities_from_relation( $relation_settings, $filter );
-			if( $relation_settings instanceof EE_Belongs_To_Relation ) {
-				//just reutrn one
-				return array_shift( $related_entities );
-			}else{
-				return $related_entities;
-			}
-			return self::get_entity_from_model( $model, $id );
+			return self::get_entities_from_relation( $relation_settings, $filter, $include );
 		}
 	}
 
@@ -226,14 +220,15 @@ class EED_REST_API extends EED_Module {
 	 * Gets a collection for the given model and filters
 	 * @param EEM_Base $model
 	 * @param array $filter
+	 * @param string $include
 	 * @return array
 	 */
-	public static function get_entities_from_model( $model, $filter ) {
-		$query_params = self::create_model_params( $model, $filter );
+	public static function get_entities_from_model( $model, $filter, $include ) {
+		$query_params = self::create_model_query_params( $model, $filter );
 		$results = $model->get_all_wpdb_results( $query_params );
 		$nice_results = array( );
 		foreach ( $results as $result ) {
-			$nice_results[ ] = self::create_entities_from_wpdb_results( $model, $result );
+			$nice_results[ ] = self::create_entity_from_wpdb_result( $model, $result, $include );
 		}
 		return $nice_results;
 	}
@@ -245,19 +240,20 @@ class EED_REST_API extends EED_Module {
 	 * is a HABTM relation, in which case it merges any non-foreign-key fields from
 	 * the join-model-object into the results
 	 * @param EE_Model_Relation_Base $relation
-	 * @param arrray $filter
+	 * @param array $filter
+	 * @param string $include specific fields to include (possibly prefixed by model name) or related models to include
 	 * @return array
 	 */
-	public static function get_entities_from_relation( $relation, $filter ) {
-		$query_params = self::create_model_params( $relation->get_other_model(), $filter );
+	public static function get_entities_from_relation( $relation, $filter, $include ) {
+		$query_params = self::create_model_query_params( $relation->get_other_model(), $filter );
 		$results = $relation->get_other_model()->get_all_wpdb_results( $query_params );
 		$nice_results = array();
 		foreach( $results as $result ) {
-			$nice_result = self::create_entities_from_wpdb_results( $relation->get_other_model(), $result );
+			$nice_result = self::create_entity_from_wpdb_result( $relation->get_other_model(), $result );
 			if( $relation instanceof EE_HABTM_Relation ) {
 				//put the unusual stuff (properties from the HABTM relation) first, and make sure
 				//if there are conflicts we prefer the properties from the main model
-				$join_model_result = self::create_entities_from_wpdb_results( $relation->get_join_model(), $result );
+				$join_model_result = self::create_entity_from_wpdb_result( $relation->get_join_model(), $result );
 				$joined_result = array_merge( $nice_result, $join_model_result );
 				//but keep the meta stuff from the main model
 				$joined_result['meta'] = $nice_result['meta'];
@@ -265,15 +261,20 @@ class EED_REST_API extends EED_Module {
 			}
 			$nice_results[] = $nice_result;
 		}
-		return $nice_results;
+		if( $relation instanceof EE_Belongs_To_Relation ){
+			return array_shift( $nice_results );
+		}else{
+			return $nice_results;
+		}
 	}
 
 	/**
 	 * Changes database results into REST API entities
 	 * @param EEM_Base $model
 	 * @param array $db_row
+	 * @param string $include
 	 */
-	public static function create_entities_from_wpdb_results( $model, $db_row ) {
+	public static function create_entity_from_wpdb_result( $model, $db_row, $include ) {
 		$result = $model->_deduce_fields_n_values_from_cols_n_values( $db_row );
 		foreach( $result as $field_name => $field_value ) {
 			$field_obj = $model->field_settings_for($field_name);
@@ -299,24 +300,35 @@ class EED_REST_API extends EED_Module {
 			}
 			$result['meta']['links'][$related_model_part] = json_url( self::ee_api_namespace . Inflector::pluralize_and_lower( $model->get_this_model_name() ) . '/' . $result[ $model->primary_key_name() ] . '/' . $related_model_part );
 		}
+		//filter fields if specified
+		$includes_for_this_model = self::extract_includes_for_this_model( $include );
+		if( ! empty( $includes_for_this_model ) ) {
+			$result = array_intersect_key( $result, array_flip( $includes_for_this_model ) );
+		}
 		$result = apply_filters( 'FHEE__EED_REST_API__deduce_fields_n_values_form_cols_n_values_except_fks', $result, $model );
 		return $result;
 	}
 
+//	public function
 
 
 	/**
 	 * Gets the one model object with the specified id for the specified model
 	 * @param EEM_Base $model
 	 * @param string $id
+	 * @param string $include
 	 * @return array
 	 */
-	public static function get_entity_from_model( $model, $id ) {
-		$model_obj = $model->get_one_by_ID( $id );
-		if ( $model_obj ) {
-			return $model_obj->model_field_array();
+	public static function get_entity_from_model( $model, $id, $include ) {
+		$query_params = array( array( $model->primary_key_name() => $id ),'limit' => 1 );
+		if( $model instanceof EEM_Soft_Delete_Base ){
+			$query_params = $model->alter_query_params_so_deleted_and_undeleted_items_included($query_params);
+		}
+		$model_rows = $model->get_all_wpdb_results( $query_params );
+		if ( ! empty ( $model_rows ) ) {
+			return self::create_entity_from_wpdb_result( $model, array_shift( $model_rows ), $include );
 		} else {
-			return new WP_Error( 'json_object_invalid_id', __( 'Invalid model object ID.' ), array( 'status' => 404 ) );
+			return new WP_Error( 'json_ee_object_invalid_id', __( 'Invalid model object ID.' ), array( 'status' => 404 ) );
 		}
 	}
 
@@ -328,7 +340,7 @@ class EED_REST_API extends EED_Module {
 	 * @param type $filter
 	 * @return array like what EEM_Base::get_all() expects
 	 */
-	public static function create_model_params( $model, $filter ) {
+	public static function create_model_query_params( $model, $filter ) {
 		$model_query_params = array( );
 		if ( isset( $filter[ 'where' ] ) ) {
 			//@todo: no good for permissions
@@ -352,7 +364,44 @@ class EED_REST_API extends EED_Module {
 		if ( isset( $filter[ 'default_where_conditions' ] ) ) {
 			$model_query_params[ 'default_where_conditions' ] = $filter[ 'default_where_conditions' ];
 		}
-		return apply_filters( 'FHEE__EED_REST_API__create_model_params', $model_query_params, $filter, $model );
+		return apply_filters( 'FHEE__EED_REST_API__create_model_query_params', $model_query_params, $filter, $model );
+	}
+
+	/**
+	 * Parses the $include_string so we fetch all the field names relating to THIS model
+	 * (ie have NO period in them), or for the provided model (ie start with the model
+	 * name and then a period)
+	 * @param type $include_string
+	 * @param type $model_name
+	 * @return array of fields for this model. If $model_name is provided, then
+	 * the fields for that model, with the model's name removed from each
+	 */
+	public static function extract_includes_for_this_model( $include_string, $model_name = null ) {
+		if( $include_string === null ) {
+			return array();
+		}
+		$includes = explode( ',', $include_string );
+		$extracted_fields_to_include = array();
+		if( $model_name ){
+			foreach( $includes as $field_to_include ) {
+				$field_to_include = trim( $field_to_include );
+				if( strpos( $field_to_include, $model_name . '.' ) === 0 ) {
+					//found the model name at the exact start
+					$field_sans_model_name = str_replace( $model_name . '.', '', $field_to_include );
+					$extracted_fields_to_include[] = $field_sans_model_name;
+				}
+			}
+		}else{
+			//look for ones with no period
+			foreach( $includes as $field_to_include ) {
+				$field_to_include = trim( $field_to_include );
+				if( strpos($field_to_include, '.' ) === FALSE ) {
+					$extracted_fields_to_include[] = $field_to_include;
+				}
+			}
+		}
+		return $extracted_fields_to_include;
+
 	}
 
 

@@ -8,12 +8,14 @@
  */
 
 define( 'EE_PLUGIN_DIR', dirname( dirname( dirname( dirname(__FILE__ ) ) ) ) . '/event-espresso-core/');
+define( 'WP_API_PLUGIN_DIR', dirname( dirname( dirname( dirname(__FILE__ ) ) ) ) . '/WP-API/');
 define( 'EEADDON_TESTS_DIR', dirname( dirname( __FILE__ ) ) . '/'  );
 define( 'EEADDON_PLUGIN_DIR' , dirname( dirname( dirname(__FILE__)  ) ). '/' );
 
 if ( ! defined( 'EE_TESTS_DIR' ) ) {
 	define( 'EE_TESTS_DIR', EE_PLUGIN_DIR .  'tests/' );
 }
+define( 'WP_API_TESTS_DIR', WP_API_PLUGIN_DIR . '/tests/' );
 
 /**
  * In the pre-develop.svn WP development environment, an environmental bash
