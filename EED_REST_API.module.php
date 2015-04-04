@@ -78,7 +78,7 @@ class EED_REST_API extends EED_Module {
 	 */
 	public static function register_routes( $routes ) {
 		$ee_routes = get_option( self::saved_routes_option_names, null );
-		if( ! $ee_routes ){
+		if( ! $ee_routes || ( defined('EE_REST_API_DEV') && EE_REST_API_DEV )){
 			self::save_ee_routes();
 			$ee_routes = get_option( self::saved_routes_option_names, array() );
 		}
@@ -94,7 +94,7 @@ class EED_REST_API extends EED_Module {
 	public static function save_ee_routes() {
 		if( EE_Maintenance_Mode::instance()->models_can_query() ){
 			$instance = self::instance();
-			$routes = $instance->_register_model_routes();
+			$routes = array_merge( $instance->_register_config_routes(), $instance->_register_model_routes() );
 			update_option( self::saved_routes_option_names, $routes, true );
 		}
 	}
@@ -126,6 +126,17 @@ class EED_REST_API extends EED_Module {
 			}
 		}
 		return $model_routes;
+	}
+
+	/**
+	 * Gets routes for the config
+	 * @return array
+	 */
+	protected function _register_config_routes() {
+		$config_routes[ self::ee_api_namespace . 'config' ] = array(
+				array( array( 'EE_Config_Rest_Read_Controller', 'handle_request' ), WP_JSON_Server::READABLE ),
+			);
+		return $config_routes;
 	}
 
 

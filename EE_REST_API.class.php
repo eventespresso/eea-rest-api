@@ -43,6 +43,7 @@ Class  EE_REST_API extends EE_Addon {
 					'REST_API_Admin_Page_Init' => EE_REST_API_ADMIN . 'REST_API_Admin_Page_Init.core.php',
 					'Inflector' => EE_REST_API_PATH . 'core/libraries/Inflector.class.php',
 					'EE_Models_Rest_Read_Controller' => EE_REST_API_PATH . 'EE_Models_Rest_Read_Controller.class.php',
+					'EE_Config_Rest_Read_Controller' => EE_REST_API_PATH . 'EE_Config_Rest_Read_Controller.class.php',
 				),
 
 				'module_paths' 		=> array( EE_REST_API_PATH . 'EED_REST_API.module.php' ),
