@@ -39,6 +39,33 @@ class EE_Models_Rest_Read_Controller {
 		}
 	}
 
+	/**
+	 * Handles requests to get all mine (or a filtered subset) of entities for a particular model
+	 * @param string $_path
+	 * @param array $filter
+	 * @param string $include
+	 * @return array
+	 */
+	public static function handle_request_get_all_mine( $_path, $filter = array(), $include = '*' ) {
+		$inflector = new Inflector();
+		$regex = '~' . EED_REST_API::ee_api_namespace_for_regex . '(.*)/mine~';
+		$success = preg_match( $regex, $_path, $matches );
+		if ( is_array( $matches ) && isset( $matches[ 1 ] ) ) {
+			$model_name_plural = $matches[ 1 ];
+			$model_name_singular = str_replace( ' ', '_', $inflector->humanize( $inflector->singularize( $model_name_plural ), 'all' ) );
+			if ( ! EE_Registry::instance()->is_model_name( $model_name_singular ) ) {
+				return new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) );
+			}
+			$model = EE_Registry::instance()->load_model( $model_name_singular );
+			if( ! $model->is_owned() ) {
+				return new WP_Error( 'endpoint_not_supported', sprintf( __( 'This endpoint is misconfigured, please contact Event Espresso Support', 'event_espresso' ) ) );
+			}
+			$filter['mine'] = 1;
+			return self::get_entities_from_model( $model, $filter, $include );
+		} else {
+			return new WP_Error( 'endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
+		}
+	}
 
 	/**
 	 * Gets a single entity related to the model indicated in the path and its id
@@ -278,6 +305,9 @@ class EE_Models_Rest_Read_Controller {
 		if ( isset( $filter[ 'default_where_conditions' ] ) ) {
 			$model_query_params[ 'default_where_conditions' ] = $filter[ 'default_where_conditions' ];
 		}
+		if ( isset( $filter[ 'mine' ] ) ){
+			$model_query_params = $model->alter_query_params_to_only_include_mine( $model_query_params );
+		}
 		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_model_query_params', $model_query_params, $filter, $model );
 	}
 
@@ -319,6 +349,22 @@ class EE_Models_Rest_Read_Controller {
 		}
 		return $extracted_fields_to_include;
 
+	}
+
+	public static function get_permissions() {
+		$permission = array(
+			'Answer' => array(
+				 WP_JSON_Server::READABLE => array(
+					 '*' => array(
+						 'ee_read_registration' => new EE_API_Allow_Access(),
+
+					 )
+				 )
+			)
+		);
+		//permissions array DOESN'T account for how someone might have permission to see ALL
+		//registrations, but not use the specific page. eg they might be able to access 'registrations/' but not 'registration/10'
+		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__get_permissions', $permissions );
 	}
 }
 
