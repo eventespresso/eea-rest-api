@@ -33,7 +33,11 @@ class EE_Models_Rest_Read_Controller {
 				return new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) );
 			}
 			$model = EE_Registry::instance()->load_model( $model_name_singular );
-			return self::get_entities_from_model( $model, $filter, $include );
+			if( EE_REST_API_Capabilities::current_user_can_access_any( $model_name_singular, WP_JSON_Server::METHOD_GET ) ){
+				return self::get_entities_from_model( $model, $filter, $include );
+			}else{
+				return new WP_Error( sprintf( 'json_%s_models_cannot_list', $model_name_plural ), sprintf( __( 'Sorry, you are not allowed to list %s.' ), $model_name_plural ), array( 'status' => 403 ) );
+			}
 		} else {
 			return new WP_Error( 'endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
 		}
@@ -350,22 +354,7 @@ class EE_Models_Rest_Read_Controller {
 		return $extracted_fields_to_include;
 
 	}
-
-	public static function get_permissions() {
-		$permission = array(
-			'Answer' => array(
-				 WP_JSON_Server::READABLE => array(
-					 '*' => array(
-						 'ee_read_registration' => new EE_API_Allow_Access(),
-
-					 )
-				 )
-			)
-		);
-		//permissions array DOESN'T account for how someone might have permission to see ALL
-		//registrations, but not use the specific page. eg they might be able to access 'registrations/' but not 'registration/10'
-		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__get_permissions', $permissions );
-	}
 }
+
 
 // End of file EE_Models_Rest_Read_Controller.class.php
