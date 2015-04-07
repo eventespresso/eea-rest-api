@@ -262,6 +262,8 @@ class Inflector{
      * @return string Human-readable word
      */
     static function humanize($word, $uppercase = ''){
+		//make special exceptions for acronyms
+		$word = str_replace('wp_', 'WP_', $word );
         $uppercase = $uppercase == 'all' ? 'ucwords' : 'ucfirst';
         return $uppercase(str_replace('_', ' ', preg_replace('/_id$/', '', $word)));
     }
