@@ -154,7 +154,12 @@ class EE_Models_Rest_Read_Controller {
 	 */
 	public static function get_entities_from_model( $model, $filter, $include ) {
 		$query_params = self::create_model_query_params( $model, $filter );
-		$results = $model->get_all_wpdb_results( $query_params );
+		if( $query_params === false ) {
+			//don't even bother querying
+			$results = array();
+		} else {
+			$results = $model->get_all_wpdb_results( $query_params );
+		}
 		$nice_results = array( );
 		foreach ( $results as $result ) {
 			$nice_results[ ] = self::create_entity_from_wpdb_result( $model, $result, $include );
@@ -176,9 +181,14 @@ class EE_Models_Rest_Read_Controller {
 	 */
 	public static function get_entities_from_relation( $id,  $relation, $filter, $include ) {
 		$query_params = self::create_model_query_params( $relation->get_other_model(), $filter );
-		$query_params[0][ $relation->get_this_model()->get_this_model_name() . '.' . $relation->get_this_model()->primary_key_name() ] = $id;
-		$query_params[ 'default_where_conditions' ] = 'none';
-		$results = $relation->get_other_model()->get_all_wpdb_results( $query_params );
+		if( $query_params === false ){
+			//a restriction indicated it wanted nothing to be returned, so dont even query
+			$results = array();
+		}else{
+			$query_params[0][ $relation->get_this_model()->get_this_model_name() . '.' . $relation->get_this_model()->primary_key_name() ] = $id;
+			$query_params[ 'default_where_conditions' ] = 'none';
+			$results = $relation->get_other_model()->get_all_wpdb_results( $query_params );
+		}
 		$nice_results = array();
 		foreach( $results as $result ) {
 			$nice_result = self::create_entity_from_wpdb_result( $relation->get_other_model(), $result, $include );
@@ -312,7 +322,8 @@ class EE_Models_Rest_Read_Controller {
 	 * Translates API filter get parameter into $query_params array used by EEM_Base::get_all()
 	 * @param EEM_Base $model
 	 * @param array $filter from $_GET['filter'] parameter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
-	 * @return array like what EEM_Base::get_all() expects
+	 * @return array like what EEM_Base::get_all() expects or FALSE to indicate
+	 * that absolutely no results should be returned
 	 */
 	public static function create_model_query_params( $model, $filter ) {
 		$model_query_params = array( );
