@@ -135,7 +135,11 @@ class EE_Models_Rest_Read_Controller {
 
 			$model = EE_Registry::instance()->load_model( $main_model_name_singular );
 			$relation_settings = $model->related_settings_for( $related_model_name_singular );
-			return self::get_entities_from_relation( $id, $relation_settings, $filter, $include );
+			if( EE_REST_API_Capabilities::current_user_can_access_any( $related_model_name_singular, WP_JSON_Server::READABLE ) ){
+				return self::get_entities_from_relation( $id, $relation_settings, $filter, $include );
+			}else{
+				return new WP_Error( sprintf( 'json_%s_cannot_list', $related_model_name_maybe_plural ), sprintf( __( 'Sorry, you are not allowed to list %s related to %s. Missing permissions: %s' ), $related_model_name_maybe_plural, $main_model_name_plural, EE_REST_API_Capabilities::get_missing_permissions_string( $related_model_name_singular, WP_JSON_Server::READABLE ) ), array( 'status' => 403 ) );
+			}
 		}
 	}
 

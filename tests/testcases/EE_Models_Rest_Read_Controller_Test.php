@@ -160,6 +160,15 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 		$this->assertInstanceOf( 'WP_Error', $response );
 		$this->assertEquals( 'json_registrations_cannot_list', $response->get_error_code() );
 	}
+	/**
+	 * @group now
+	 */
+	public function test_handle_request_get_related__not_logged_in(){
+		$r = $this->new_model_obj_with_dependencies('Registration');
+		$response = EE_Models_Rest_Read_Controller::handle_request_get_related( EED_REST_API::ee_api_namespace . 'registrations/' . $r->ID() . '/attendee', $r->ID() );
+		$this->assertInstanceOf( 'WP_Error', $response );
+		$this->assertEquals( 'json_attendee_cannot_list', $response->get_error_code() );
+	}
 }
 
 // End of file EE_Models_Rest_Read_Controller_Test.php
