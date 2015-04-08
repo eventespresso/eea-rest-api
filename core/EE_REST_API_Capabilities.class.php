@@ -142,7 +142,7 @@ class EE_REST_API_Capabilities {
 					if( $restriction instanceof EE_API_Access_Entity_Never ){
 						return false;
 					}
-					$original_query_params[0] = array_replace( $original_query_params, $restriction->get_where_conditions() );
+					$original_query_params[0] = array_replace( $original_query_params[0], $restriction->get_where_conditions() );
 				}
 			}
 			return $original_query_params;

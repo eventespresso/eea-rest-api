@@ -18,8 +18,17 @@ class EE_Models_Rest_Read_Controller {
 	/**
 	 * Handles requests to get all (or a filtered subset) of entities for a particular model
 	 * @param string $_path
-	 * @param array $filter
-	 * @param string $include
+	 * @param array $filter The query parameters to be passed onto the EE models system.
+	 * Using syntax like "/wp-json/ee4/v2/events?filter[where][EVT_name][]=like&filter[where][EVT_name][]=%25monkey%25 to create a query params array like "array(array('EVT_name' => array('LIKE','%monkey%'))", which
+	 * will create SQL like "WHERE EVT_name LIKE '%monkey%'"
+	 * @param string $include string indicating which fields to include in the response, including fields
+	 * on related entities. Eg, when querying for events, an include string like
+	 * "...&include=EVT_name,EVT_desc,Datetime, Datetime.Ticket.TKT_ID, Datetime.Ticket.TKT_name, Datetime.Ticket.TKT_price" instructs us to only include the event's name and description, each related datetime, and
+	 * each related datetime's ticket's name and price. Eg json would be:
+	 * '{"EVT_ID":12,"EVT_name":"star wars party","EVT_desc":"so cool...","datetimes":[{"DTT_ID":123,...,
+	 * "tickets":[{"TKT_ID":234,"TKT_name":"student rate","TKT_price":32.0},...]}]}', ie, events with all
+	 * their associated datetimes (including ones that are trashed) embedded in the json object, and each
+	 * datetime also has each associated ticket embedded in its json object.
 	 * @return array
 	 */
 	public static function handle_request_get_all( $_path, $filter = array(), $include = '*' ) {
@@ -46,8 +55,8 @@ class EE_Models_Rest_Read_Controller {
 	/**
 	 * Handles requests to get all mine (or a filtered subset) of entities for a particular model
 	 * @param string $_path
-	 * @param array $filter
-	 * @param string $include
+	 * @param array $filter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
+	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
 	 * @return array
 	 */
 	public static function handle_request_get_all_mine( $_path, $filter = array(), $include = '*' ) {
@@ -74,8 +83,8 @@ class EE_Models_Rest_Read_Controller {
 	/**
 	 * Gets a single entity related to the model indicated in the path and its id
 	 * @param string $_path
-	 * @param string $id
-	 * @param string $includee
+	 * @param string $id ID of the thing to be retrieved
+	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
 	 * @return array|WP_Error
 	 */
 	public static function handle_request_get_one( $_path, $id, $include = '*' ) {
@@ -99,7 +108,8 @@ class EE_Models_Rest_Read_Controller {
 	 * to the item with the given id
 	 * @param string $_path
 	 * @param string $id
-	 * @param array $filter
+	 * @param array $filter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
+	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
 	 * @return array|WP_Error
 	 */
 	public static function handle_request_get_related( $_path, $id, $filter = array(), $include = '*' ) {
@@ -128,8 +138,8 @@ class EE_Models_Rest_Read_Controller {
 	/**
 	 * Gets a collection for the given model and filters
 	 * @param EEM_Base $model
-	 * @param array $filter
-	 * @param string $include
+	 * @param array $filter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
+	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
 	 * @return array
 	 */
 	public static function get_entities_from_model( $model, $filter, $include ) {
@@ -150,8 +160,8 @@ class EE_Models_Rest_Read_Controller {
 	 * the join-model-object into the results
 	 * @param string $id the ID of the thing we are fetching related stuff from
 	 * @param EE_Model_Relation_Base $relation
-	 * @param array $filter
-	 * @param string $include specific fields to include (possibly prefixed by model name) or related models to include
+	 * @param array $filter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
+	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
 	 * @return array
 	 */
 	public static function get_entities_from_relation( $id,  $relation, $filter, $include ) {
@@ -185,12 +195,11 @@ class EE_Models_Rest_Read_Controller {
 	/**
 	 * Changes database results into REST API entities
 	 * @param EEM_Base $model
-	 * @param array $db_row
-	 * @param string $include
+	 * @param array $db_row like results from $wpdb->get_results()
+	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
 	 */
 	public static function create_entity_from_wpdb_result( $model, $db_row, $include ) {
 		$result = $model->_deduce_fields_n_values_from_cols_n_values( $db_row );
-		$timezone = json_get_timezone();
 		foreach( $result as $field_name => $raw_field_value ) {
 			$field_obj = $model->field_settings_for($field_name);
 			$field_value = $field_obj->prepare_for_set_from_db( $raw_field_value );
@@ -260,8 +269,8 @@ class EE_Models_Rest_Read_Controller {
 	/**
 	 * Gets the one model object with the specified id for the specified model
 	 * @param EEM_Base $model
-	 * @param string $id
-	 * @param string $include
+	 * @param string $id ID of the entity we want to retrieve
+	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
 	 * @return array
 	 */
 	public static function get_entity_from_model( $model, $id, $include ) {
@@ -282,7 +291,7 @@ class EE_Models_Rest_Read_Controller {
 	/**
 	 * Translates API filter get parameter into $query_params array used by EEM_Base::get_all()
 	 * @param EEM_Base $model
-	 * @param array $filter from $_GET['filter'] parameter
+	 * @param array $filter from $_GET['filter'] parameter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
 	 * @return array like what EEM_Base::get_all() expects
 	 */
 	public static function create_model_query_params( $model, $filter ) {
@@ -319,12 +328,11 @@ class EE_Models_Rest_Read_Controller {
 	/**
 	 * Parses the $include_string so we fetch all the field names relating to THIS model
 	 * (ie have NO period in them), or for the provided model (ie start with the model
-	 * name and then a period)
-	 * @param type $include_string
-	 * @param type $model_name
+	 * name and then a period).
+	 * @param string $include_string @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
+	 * @param string $model_name
 	 * @return array of fields for this model. If $model_name is provided, then
 	 * the fields for that model, with the model's name removed from each.
-	 * Returns FALSE if
 	 */
 	public static function extract_includes_for_this_model( $include_string, $model_name = null ) {
 		if( $include_string === '*' ) {
