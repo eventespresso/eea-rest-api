@@ -133,9 +133,6 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 		}
 	}
 
-	/**
-	 * @group now
-	 */
 	public function test_handle_request_get_one__doesnt_exist(){
 		$e = $this->new_model_obj_with_dependencies('Event');
 		$non_existent_id = $e->ID() + 100;
@@ -143,9 +140,6 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 		$this->assertInstanceOf( 'WP_Error', $response );
 		$this->assertEquals( 'json_event_invalid_id', $response->get_error_code() );
 	}
-	/**
-	 * @group now
-	 */
 	public function test_handle_request_get_one__cannot_accesss(){
 		$e = $this->new_model_obj_with_dependencies('Event', array( 'status' => 'draft' ) );
 		$response = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'events/' . $e->ID(), $e->ID() );
@@ -153,6 +147,19 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 		$this->assertEquals( 'json_user_cannot_read', $response->get_error_code() );
 	}
 
+	public function test_handle_request_get_all__not_logged_in(){
+		$r = $this->new_model_obj_with_dependencies('Registration');
+		$response = EE_Models_Rest_Read_Controller::handle_request_get_all_mine( EED_REST_API::ee_api_namespace . 'registrations' . $r->ID() );
+		$this->assertInstanceOf( 'WP_Error', $response );
+		$this->assertEquals( 'json_registrations_cannot_list', $response->get_error_code() );
+	}
+
+	public function test_handle_request_get_all_mine__not_logged_in(){
+		$r = $this->new_model_obj_with_dependencies('Registration');
+		$response = EE_Models_Rest_Read_Controller::handle_request_get_all_mine( EED_REST_API::ee_api_namespace . 'registrations/mine' . $r->ID() );
+		$this->assertInstanceOf( 'WP_Error', $response );
+		$this->assertEquals( 'json_registrations_cannot_list', $response->get_error_code() );
+	}
 }
 
 // End of file EE_Models_Rest_Read_Controller_Test.php
