@@ -31,14 +31,25 @@ class EE_REST_API_Capabilities {
 				'Event' => array(
 					 WP_JSON_Server::READABLE => array(
 						 '*' => array(
+							 //if they can't read events (in the admin) only show them ones they can see on the frontend
 							 'ee_read_events' => new EE_API_Access_Entity_If( array( 'status' => 'publish', 'Datetime.DTT_EVT_end' => array( '<=', current_time('mysql' ) ) ) ),
 
 						 )
 					 )
 				)
 			);
-			//permissions array DOESN'T account for how someone might have permission to see ALL
-			//registrations, but not use the specific page. eg they might be able to access 'registrations/' but not 'registration/10'
+			foreach( EE_Registry::instance()->non_abstract_db_models as $model_name => $model_classname ) {
+				if( ! isset( $restrictions[ $model_name ] ) ) {
+					$restrictions[ $model_name ] = array(
+						WP_JSON_Server::READABLE => array(
+							'*' => array(
+								//by default, if they're basically not an admin, they can't read this
+								'activate_plugins' => new EE_API_Access_Entity_Never()
+							)
+						)
+					);
+				}
+			}
 			$restrictions =  apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__get_permissions', $restrictions );
 			foreach( $restrictions as $model_name => $request_types_handled ) {
 				foreach( $request_types_handled as $request_type_handled => $api_fields ){
