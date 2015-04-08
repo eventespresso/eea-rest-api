@@ -281,8 +281,8 @@ class EE_Models_Rest_Read_Controller {
 
 	/**
 	 * Translates API filter get parameter into $query_params array used by EEM_Base::get_all()
-	 * @param type $model
-	 * @param type $filter
+	 * @param EEM_Base $model
+	 * @param array $filter from $_GET['filter'] parameter
 	 * @return array like what EEM_Base::get_all() expects
 	 */
 	public static function create_model_query_params( $model, $filter ) {
@@ -312,6 +312,7 @@ class EE_Models_Rest_Read_Controller {
 		if ( isset( $filter[ 'mine' ] ) ){
 			$model_query_params = $model->alter_query_params_to_only_include_mine( $model_query_params );
 		}
+		$model_query_params = EE_REST_API_Capabilities::add_restrictions_onto_query( $model_query_params, $model->get_this_model_name(), WP_JSON_Server::READABLE );
 		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_model_query_params', $model_query_params, $filter, $model );
 	}
 

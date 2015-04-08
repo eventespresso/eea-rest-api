@@ -121,6 +121,36 @@ class EE_REST_API_Capabilities {
 	public static function get_missing_permissions_string( $model_name, $request_type = WP_JSON_Server::READABLE ) {
 		return implode(',', self::get_missing_permissions( $model_name, $request_type ) );
 	}
+
+	/**
+	 * Modifies the query according to the user's permissions (and if certain permissions
+	 * are missing, we instead impose restrictions on the database query).
+	 * If there is a restriction that means we shouldn't return ANYTHING, just return false.
+	 * Client code will need to understand what false means.
+	 * @param array $original_query_params @see EEM_Base::get_all
+	 * @param string $model_name
+	 * @param int $request_type like a const on WP_JSON_Server
+	 * @return boolean
+	 */
+	public static function add_restrictions_onto_query( $original_query_params, $model_name, $request_type = WP_JSON_Server::READABLE ) {
+		$access_restrictions = self::get_access_restrictions();
+		if( isset( $access_restrictions[ $model_name ] ) && isset( $access_restrictions[ $model_name ][ $request_type ] ) && isset( $access_restrictions[ $model_name ][ $request_type ][ '*' ] ) ) {
+			foreach( $access_restrictions[ $model_name ][ $request_type ][ '*' ] as $capability => $restriction ) {
+				//check that we're not missing a critical capability
+				if( ! current_user_can( $capability ) ){
+					//missing this permission is a deal-breaker
+					if( $restriction instanceof EE_API_Access_Entity_Never ){
+						return false;
+					}
+					$original_query_params[0] = array_replace( $original_query_params, $restriction->get_where_conditions() );
+				}
+			}
+			return $original_query_params;
+		}else{
+			//there's no entry, so really no one should be able to access this
+			return false;
+		}
+	}
 }
 
 /**
