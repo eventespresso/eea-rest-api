@@ -77,11 +77,49 @@ class EE_REST_API_Capabilities {
 	 */
 	public static function current_user_can_access_any( $model_name, $request_type = WP_JSON_Server::READABLE ) {
 		$access_restrictions = self::get_access_restrictions();
-		if( isset( $access_restrictions[ $model_name ] ) && isset( $access_restrictions[ $model_name ][ $request_type ] ) ) {
+		if( isset( $access_restrictions[ $model_name ] ) && isset( $access_restrictions[ $model_name ][ $request_type ] ) && isset( $access_restrictions[ $model_name ][ $request_type ][ '*' ] ) ) {
+			foreach( $access_restrictions[ $model_name ][ $request_type ][ '*' ] as $capability => $restriction ) {
+				//check that we're not missing a critical capability
+				if( ! current_user_can( $capability ) && $restriction instanceof EE_API_Access_Entity_Never ){
+					return false;
+				}
+			}
 			return true;
 		}else{
 			return false;
 		}
+	}
+	/**
+	 * Gets an array of all the capabilities the current user is missing that affected
+	 * the query
+	 * @param string $model_name
+	 * @param int $request_type one of the consts on WP_JSON_Server
+	 * @return array
+	 */
+	public static function get_missing_permissions( $model_name, $request_type = WP_JSON_Server::READABLE ) {
+		$caps_missing = array();
+		$access_restrictions = self::get_access_restrictions();
+		if( isset( $access_restrictions[ $model_name ] ) && isset( $access_restrictions[ $model_name ][ $request_type ] ) && isset( $access_restrictions[ $model_name ][ $request_type ][ '*' ] ) ) {
+			foreach( $access_restrictions[ $model_name ][ $request_type ][ '*' ] as $capability => $restriction ) {
+				//check that we're not missing a critical capability
+				if( ! current_user_can( $capability ) ){
+					$caps_missing[] = $capability;
+				}
+			}
+			return $caps_missing;
+		}else{
+			return array( '**none: no one can access this' );
+		}
+	}
+	/**
+	 * Gets a string of all the capabilities the current user is missing that affected
+	 * the query
+	 * @param string $model_name
+	 * @param int $request_type one of the consts on WP_JSON_Server
+	 * @return string
+	 */
+	public static function get_missing_permissions_string( $model_name, $request_type = WP_JSON_Server::READABLE ) {
+		return implode(',', self::get_missing_permissions( $model_name, $request_type ) );
 	}
 }
 

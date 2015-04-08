@@ -33,10 +33,10 @@ class EE_Models_Rest_Read_Controller {
 				return new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) );
 			}
 			$model = EE_Registry::instance()->load_model( $model_name_singular );
-			if( EE_REST_API_Capabilities::current_user_can_access_any( $model_name_singular, WP_JSON_Server::METHOD_GET ) ){
+			if( EE_REST_API_Capabilities::current_user_can_access_any( $model_name_singular, WP_JSON_Server::READABLE ) ){
 				return self::get_entities_from_model( $model, $filter, $include );
 			}else{
-				return new WP_Error( sprintf( 'json_%s_models_cannot_list', $model_name_plural ), sprintf( __( 'Sorry, you are not allowed to list %s.' ), $model_name_plural ), array( 'status' => 403 ) );
+				return new WP_Error( sprintf( 'json_%s_models_cannot_list', $model_name_plural ), sprintf( __( 'Sorry, you are not allowed to list %s. Missing permissions: %s' ), $model_name_plural, EE_REST_API_Capabilities::get_missing_permissions_string( $model_name_singular, WP_JSON_Server::READABLE ) ), array( 'status' => 403 ) );
 			}
 		} else {
 			return new WP_Error( 'endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
