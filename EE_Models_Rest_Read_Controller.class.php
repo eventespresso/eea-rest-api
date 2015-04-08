@@ -91,7 +91,7 @@ class EE_Models_Rest_Read_Controller {
 		$inflector = new Inflector();
 		$regex = '~' . EED_REST_API::ee_api_namespace_for_regex . '(.*)/(.*)~';
 		$success = preg_match( $regex, $_path, $matches );
-		if ( is_array( $matches ) && isset( $matches[ 1 ] ) ) {
+		if ( $success && is_array( $matches ) && isset( $matches[ 1 ] ) ) {
 			$model_name_plural = $matches[ 1 ];
 			$model_name_singular = str_replace( ' ', '_', $inflector->humanize( $inflector->singularize( $model_name_plural ), 'all' ) );
 			if ( ! EE_Registry::instance()->is_model_name( $model_name_singular ) ) {
@@ -99,6 +99,8 @@ class EE_Models_Rest_Read_Controller {
 			}
 			$model = EE_Registry::instance()->load_model( $model_name_singular );
 			return self::get_entity_from_model( $model, $id, $include );
+		}else{
+			return new WP_Error( 'endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
 		}
 	}
 
@@ -278,11 +280,21 @@ class EE_Models_Rest_Read_Controller {
 		if( $model instanceof EEM_Soft_Delete_Base ){
 			$query_params = $model->alter_query_params_so_deleted_and_undeleted_items_included($query_params);
 		}
-		$model_rows = $model->get_all_wpdb_results( $query_params );
+		$restricted_query_params = EE_REST_API_Capabilities::add_restrictions_onto_query( $query_params, $model->get_this_model_name(), WP_JSON_Server::READABLE );
+		$model_rows = $model->get_all_wpdb_results( $restricted_query_params );
 		if ( ! empty ( $model_rows ) ) {
 			return self::create_entity_from_wpdb_result( $model, array_shift( $model_rows ), $include );
 		} else {
-			return new WP_Error( 'json_ee_object_invalid_id', __( 'Invalid model object ID.' ), array( 'status' => 404 ) );
+			//ok let's test to see if we WOULD have found it, had we not had restrictions from missing capabilities
+			$lowercase_model_name = strtolower( $model->get_this_model_name() );
+			$model_rows_found_sans_restrictions = $model->get_all_wpdb_results( $query_params );
+			if( ! empty( $model_rows_found_sans_restrictions ) ) {
+				//you got shafted- it existed but we didn't want to tell you!
+				return new WP_Error( 'json_user_cannot_read', sprintf( __( 'Sorry, you cannot read this %s', 'event_espresso' ), strtolower( $model->get_this_model_name() ) ) );
+			}else{
+				//it's not you. It just doesn't exist
+				return new WP_Error( sprintf( 'json_%s_invalid_id', $lowercase_model_name ), sprintf( __( 'Invalid %s ID.', 'event_espresso' ), $lowercase_model_name ), array( 'status' => 404 ) );
+			}
 		}
 	}
 

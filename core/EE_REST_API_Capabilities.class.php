@@ -32,7 +32,7 @@ class EE_REST_API_Capabilities {
 					 WP_JSON_Server::READABLE => array(
 						 '*' => array(
 							 //if they can't read events (in the admin) only show them ones they can see on the frontend
-							 'ee_read_events' => new EE_API_Access_Entity_If( array( 'status' => 'publish', 'Datetime.DTT_EVT_end' => array( '<=', current_time('mysql' ) ) ) ),
+							 'ee_read_events' => new EE_API_Access_Entity_If( array( 'status' => 'publish', 'Datetime.DTT_EVT_end' => array( '>=', current_time('mysql' ) ) ) ),
 
 						 )
 					 )
@@ -141,6 +141,9 @@ class EE_REST_API_Capabilities {
 					//missing this permission is a deal-breaker
 					if( $restriction instanceof EE_API_Access_Entity_Never ){
 						return false;
+					}
+					if( ! isset( $original_query_params[0] ) ){
+						$original_query_params[0] = array();
 					}
 					$original_query_params[0] = array_replace( $original_query_params[0], $restriction->get_where_conditions() );
 				}

@@ -70,6 +70,7 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 	public function test_handle_request_get_one__event() {
 		$event = $this->new_model_obj_with_dependencies( 'Event' );
 		$result = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'events/' . $event->ID(), $event->ID() );
+		$this->assertTrue( is_array( $result ) );
 		unset( $result[ 'EVT_created' ] );
 		unset( $result[ 'EVT_modified' ] );
 		unset( $result[ 'EVT_visible_on' ] );
@@ -130,6 +131,26 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 		foreach( $answers as $answer ){
 			$this->assertArrayHasKey( 'question', $answer );
 		}
+	}
+
+	/**
+	 * @group now
+	 */
+	public function test_handle_request_get_one__doesnt_exist(){
+		$e = $this->new_model_obj_with_dependencies('Event');
+		$non_existent_id = $e->ID() + 100;
+		$response = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'events/' . $non_existent_id, $non_existent_id );
+		$this->assertInstanceOf( 'WP_Error', $response );
+		$this->assertEquals( 'json_event_invalid_id', $response->get_error_code() );
+	}
+	/**
+	 * @group now
+	 */
+	public function test_handle_request_get_one__cannot_accesss(){
+		$e = $this->new_model_obj_with_dependencies('Event', array( 'status' => 'draft' ) );
+		$response = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'events/' . $e->ID(), $e->ID() );
+		$this->assertInstanceOf( 'WP_Error', $response );
+		$this->assertEquals( 'json_user_cannot_read', $response->get_error_code() );
 	}
 
 }
