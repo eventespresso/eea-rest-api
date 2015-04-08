@@ -36,6 +36,13 @@ class EE_REST_API_Capabilities {
 
 						 )
 					 )
+				),
+				'Answer' => array(
+				WP_JSON_Server::READABLE => array(
+					'*' => array(
+						//allow full access to anyone
+						)
+				)
 				)
 			);
 			foreach( EE_Registry::instance()->non_abstract_db_models as $model_name => $model_classname ) {

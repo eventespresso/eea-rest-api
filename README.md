@@ -5,7 +5,7 @@ An Event Espresso 4 addon for providing an RESTful interface for event espresso'
 
 It currently only works with a non-released version of EE4.6: branch FET-7914-core-changes-for-api on our <a href='https://github.com/eventespresso/event-espresso-core/tree/FET-7914-core-changes-for-api'>EE4 Core Github Repo</a>. If you do not have access to our core Github repo, <a href='http://eventespresso.com/developers/request-repo-access/'>request access here</a>.
 
-This plugin also requires you have the master branch of <a href='https://github.com/WP-API/WP-API>the WP API</a> active on your site.
+This plugin also requires you have the master branch of <a href='https://github.com/WP-API/WP-API'>the WP API</a> active on your site.
 
 Installation:
 This plugin/addon needs to be uploaded to the "/wp-content/plugins/" directory on your server or installed using the WordPress plugins installer; and then activated. It
