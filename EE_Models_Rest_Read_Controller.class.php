@@ -45,7 +45,7 @@ class EE_Models_Rest_Read_Controller {
 			if( EE_REST_API_Capabilities::current_user_can_access_any( $model_name_singular, WP_JSON_Server::READABLE ) ){
 				return self::get_entities_from_model( $model, $filter, $include );
 			}else{
-				return new WP_Error( sprintf( 'json_%s_models_cannot_list', $model_name_plural ), sprintf( __( 'Sorry, you are not allowed to list %s. Missing permissions: %s' ), $model_name_plural, EE_REST_API_Capabilities::get_missing_permissions_string( $model_name_singular, WP_JSON_Server::READABLE ) ), array( 'status' => 403 ) );
+				return new WP_Error( sprintf( 'json_%s_cannot_list', $model_name_plural ), sprintf( __( 'Sorry, you are not allowed to list %s. Missing permissions: %s' ), $model_name_plural, EE_REST_API_Capabilities::get_missing_permissions_string( $model_name_singular, WP_JSON_Server::READABLE ) ), array( 'status' => 403 ) );
 			}
 		} else {
 			return new WP_Error( 'endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
@@ -73,8 +73,12 @@ class EE_Models_Rest_Read_Controller {
 			if( ! $model->is_owned() ) {
 				return new WP_Error( 'endpoint_not_supported', sprintf( __( 'This endpoint is misconfigured, please contact Event Espresso Support', 'event_espresso' ) ) );
 			}
-			$filter['mine'] = 1;
-			return self::get_entities_from_model( $model, $filter, $include );
+			if( EE_REST_API_Capabilities::current_user_can_access_any( $model_name_singular, WP_JSON_Server::READABLE ) ){
+				$filter['mine'] = 1;
+				return self::get_entities_from_model( $model, $filter, $include );
+			}else{
+				return new WP_Error( sprintf( 'json_%s_cannot_list', $model_name_plural ), sprintf( __( 'Sorry, you are not allowed to list %s. Missing permissions: %s' ), $model_name_plural, EE_REST_API_Capabilities::get_missing_permissions_string( $model_name_singular, WP_JSON_Server::READABLE ) ), array( 'status' => 403 ) );
+			}
 		} else {
 			return new WP_Error( 'endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
 		}
