@@ -46,7 +46,7 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 	}
 
 	public function test_handle_request_get_one__event_includes() {
-		$event = $this->new_model_obj_with_dependencies( 'Event' );
+		$event = $this->new_model_obj_with_dependencies( 'Event', array( 'status' => 'publish' ) );
 		$result = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'events/' . $event->ID(), $event->ID(), 'EVT_ID,EVT_name' );
 		$this->assertEquals(
 			array (
@@ -55,6 +55,7 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 				), $result );
 	}
 	public function test_handle_request_get_one__event_include_non_model_field() {
+		$this->set_current_user_to_new();
 		$event = $this->new_model_obj_with_dependencies( 'Event' );
 		$result = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'events/' . $event->ID(), $event->ID(), 'EVT_desc_raw, EVT_desc' );
 		$this->assertEquals(
@@ -68,6 +69,7 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 		$this->assertEquals( array(), EE_Models_Rest_Read_Controller::extract_includes_for_this_model( '*' ) );
 	}
 	public function test_handle_request_get_one__event() {
+		$this->set_current_user_to_new();
 		$event = $this->new_model_obj_with_dependencies( 'Event' );
 		$result = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'events/' . $event->ID(), $event->ID() );
 		$this->assertTrue( is_array( $result ) );
@@ -82,36 +84,38 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 				'EVT_desc' => $event->get( 'EVT_desc' ) ,
 				'EVT_slug' => $event->get( 'EVT_slug' ) ,
 				'EVT_short_desc' => $event->get( 'EVT_short_desc' ) ,
-				'EVT_wp_user' => $event->get( 'EVT_wp_user' ) ,
 				'parent' => $event->get( 'parent' ) ,
 				'EVT_order' => $event->get( 'EVT_order' ) ,
-				'status' => $event->get( 'status' ) ,
+				'status' => $event->get_pretty( 'status' ) ,
 				'comment_status' => $event->get( 'comment_status' ) ,
 				'ping_status' => $event->get( 'ping_status' ) ,
 				'EVT_display_desc' => $event->get( 'EVT_display_desc' ) ,
 				'EVT_display_ticket_selector' => $event->get( 'EVT_display_ticket_selector' ) ,
 				'EVT_additional_limit' => $event->get( 'EVT_additional_limit' ) ,
-				'EVT_default_registration_status' => $event->get( 'EVT_default_registration_status' ) ,
+				'EVT_default_registration_status' => $event->get_pretty( 'EVT_default_registration_status' ) ,
 				'EVT_member_only' => $event->get( 'EVT_member_only' ) ,
 				'EVT_phone' => $event->get( 'EVT_phone' ) ,
 				'EVT_allow_overflow' => $event->get( 'EVT_allow_overflow' ) ,
 				'EVT_external_URL' => $event->get( 'EVT_external_URL' ) ,
 				'EVT_donations' => $event->get( 'EVT_donations' ) ,
 				'EVT_desc_raw' => $event->get_pretty( 'EVT_desc' ) ,
-				'status_pretty' => 'Draft',
-				'EVT_default_registration_status_pretty' => 'PENDING_PAYMENT',
+				'status_raw' => $event->get( 'status' ) ,
+				'EVT_default_registration_status_raw' => $event->get( 'EVT_default_registration_status' ) ,
 			  ),
 				$result
 				);
 	}
 
+
 	public function test_handle_request_get_one__registration_include_attendee(){
+		$this->set_current_user_to_new();
 		$r = $this->new_model_obj_with_dependencies( 'Registration' );
 		$entity = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'registrations/' . $r->ID(), $r->ID(), 'Attendee.*');
 		$this->assertArrayHasKey( 'attendee', $entity );
 	}
 
 	public function test_handle_request_get_one__registration_include_answers_and_questions(){
+		$this->set_current_user_to_new();
 		$r = $this->new_model_obj_with_dependencies( 'Registration' );
 		$a = $this->new_model_obj_with_dependencies( 'Answer', array( 'REG_ID' => $r->ID() ) );
 		$entity = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'registrations/' . $r->ID(), $r->ID(), 'Answer.Question.*');
@@ -123,6 +127,7 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 	}
 
 	public function test_handle_request_get_one__registration_include_answers_and_question_bare_min_from_each(){
+		$this->set_current_user_to_new();
 		$r = $this->new_model_obj_with_dependencies( 'Registration' );
 		$a = $this->new_model_obj_with_dependencies( 'Answer', array( 'REG_ID' => $r->ID() ) );
 		$entity = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'registrations/' . $r->ID(), $r->ID(), 'Answer.ATT_ID, Answer.Question.QST_ID');
@@ -149,7 +154,7 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 
 	public function test_handle_request_get_all__not_logged_in(){
 		$r = $this->new_model_obj_with_dependencies('Registration');
-		$response = EE_Models_Rest_Read_Controller::handle_request_get_all_mine( EED_REST_API::ee_api_namespace . 'registrations' . $r->ID() );
+		$response = EE_Models_Rest_Read_Controller::handle_request_get_all( EED_REST_API::ee_api_namespace . 'registrations' );
 		$this->assertInstanceOf( 'WP_Error', $response );
 		$this->assertEquals( 'json_registrations_cannot_list', $response->get_error_code() );
 	}
@@ -160,14 +165,34 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 		$this->assertInstanceOf( 'WP_Error', $response );
 		$this->assertEquals( 'json_registrations_cannot_list', $response->get_error_code() );
 	}
-	/**
-	 * @group now
-	 */
 	public function test_handle_request_get_related__not_logged_in(){
 		$r = $this->new_model_obj_with_dependencies('Registration');
 		$response = EE_Models_Rest_Read_Controller::handle_request_get_related( EED_REST_API::ee_api_namespace . 'registrations/' . $r->ID() . '/attendee', $r->ID() );
 		$this->assertInstanceOf( 'WP_Error', $response );
 		$this->assertEquals( 'json_attendee_cannot_list', $response->get_error_code() );
+	}
+
+	/**
+	* @param string $role
+	* @return \WP_User
+	*/
+	public function get_wp_user_mock( $role = 'administrator' ) {
+	   /** @type WP_User $user */
+	   $user = $this->factory->user->create_and_get();
+	   $user->add_role( $role );
+	   return $user;
+	}
+
+	/**
+	 * Creates a new wp user with the specified role and makes them the new current user
+	 * @global type $current_user
+	 * @param type $role
+	 * @return WP_User
+	 */
+	public function set_current_user_to_new( $role = 'administrator' ){
+		global $current_user;
+		$current_user = $this->get_wp_user_mock( $role );
+		return $current_user;
 	}
 }
 

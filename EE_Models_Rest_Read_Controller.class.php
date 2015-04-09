@@ -42,10 +42,10 @@ class EE_Models_Rest_Read_Controller {
 				return new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) );
 			}
 			$model = EE_Registry::instance()->load_model( $model_name_singular );
-			if( EE_REST_API_Capabilities::current_user_can_access_any( $model_name_singular, WP_JSON_Server::READABLE ) ){
+			if( EE_REST_API_Capabilities::current_user_has_partial_access_to( $model, WP_JSON_Server::READABLE ) ){
 				return self::get_entities_from_model( $model, $filter, $include );
 			}else{
-				return new WP_Error( sprintf( 'json_%s_cannot_list', $model_name_plural ), sprintf( __( 'Sorry, you are not allowed to list %s. Missing permissions: %s' ), $model_name_plural, EE_REST_API_Capabilities::get_missing_permissions_string( $model_name_singular, WP_JSON_Server::READABLE ) ), array( 'status' => 403 ) );
+				return new WP_Error( sprintf( 'json_%s_cannot_list', $model_name_plural ), sprintf( __( 'Sorry, you are not allowed to list %s. Missing permissions: %s' ), $model_name_plural, EE_REST_API_Capabilities::get_missing_permissions_string( $model, WP_JSON_Server::READABLE ) ), array( 'status' => 403 ) );
 			}
 		} else {
 			return new WP_Error( 'endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
@@ -73,11 +73,11 @@ class EE_Models_Rest_Read_Controller {
 			if( ! $model->is_owned() ) {
 				return new WP_Error( 'endpoint_not_supported', sprintf( __( 'This endpoint is misconfigured, please contact Event Espresso Support', 'event_espresso' ) ) );
 			}
-			if( EE_REST_API_Capabilities::current_user_can_access_any( $model_name_singular, WP_JSON_Server::READABLE ) ){
+			if( EE_REST_API_Capabilities::current_user_has_partial_access_to( $model, WP_JSON_Server::READABLE ) ){
 				$filter['mine'] = 1;
 				return self::get_entities_from_model( $model, $filter, $include );
 			}else{
-				return new WP_Error( sprintf( 'json_%s_cannot_list', $model_name_plural ), sprintf( __( 'Sorry, you are not allowed to list %s. Missing permissions: %s' ), $model_name_plural, EE_REST_API_Capabilities::get_missing_permissions_string( $model_name_singular, WP_JSON_Server::READABLE ) ), array( 'status' => 403 ) );
+				return new WP_Error( sprintf( 'json_%s_cannot_list', $model_name_plural ), sprintf( __( 'Sorry, you are not allowed to list %s. Missing permissions: %s' ), $model_name_plural, EE_REST_API_Capabilities::get_missing_permissions_string( $model, WP_JSON_Server::READABLE ) ), array( 'status' => 403 ) );
 			}
 		} else {
 			return new WP_Error( 'endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
@@ -135,10 +135,10 @@ class EE_Models_Rest_Read_Controller {
 
 			$model = EE_Registry::instance()->load_model( $main_model_name_singular );
 			$relation_settings = $model->related_settings_for( $related_model_name_singular );
-			if( EE_REST_API_Capabilities::current_user_can_access_any( $related_model_name_singular, WP_JSON_Server::READABLE ) ){
+			if( EE_REST_API_Capabilities::current_user_has_partial_access_to( $relation_settings->get_other_model(), WP_JSON_Server::READABLE ) ){
 				return self::get_entities_from_relation( $id, $relation_settings, $filter, $include );
 			}else{
-				return new WP_Error( sprintf( 'json_%s_cannot_list', $related_model_name_maybe_plural ), sprintf( __( 'Sorry, you are not allowed to list %s related to %s. Missing permissions: %s' ), $related_model_name_maybe_plural, $main_model_name_plural, EE_REST_API_Capabilities::get_missing_permissions_string( $related_model_name_singular, WP_JSON_Server::READABLE ) ), array( 'status' => 403 ) );
+				return new WP_Error( sprintf( 'json_%s_cannot_list', $related_model_name_maybe_plural ), sprintf( __( 'Sorry, you are not allowed to list %s related to %s. Missing permissions: %s' ), $related_model_name_maybe_plural, $main_model_name_plural, EE_REST_API_Capabilities::get_missing_permissions_string( $relation_settings->get_other_model(), WP_JSON_Server::READABLE ) ), array( 'status' => 403 ) );
 			}
 		}
 	}
@@ -231,8 +231,8 @@ class EE_Models_Rest_Read_Controller {
 			}elseif( $field_obj instanceof EE_Enum_Integer_Field ||
 					$field_obj instanceof EE_Enum_Text_Field ||
 					$field_obj instanceof EE_Money_Field ) {
-				$result[ $field_name ] = $field_obj->prepare_for_get( $field_value );
-				$result[ $field_name . '_pretty' ] = $field_obj->prepare_for_pretty_echoing( $field_value );
+				$result[ $field_name . '_raw' ] = $field_obj->prepare_for_get( $field_value );
+				$result[ $field_name ] = $field_obj->prepare_for_pretty_echoing( $field_value );
 			}elseif( $field_obj instanceof EE_Datetime_Field ){
 				$result[ $field_name ] = json_mysql_to_rfc3339( $raw_field_value );
 			}else{
@@ -264,8 +264,9 @@ class EE_Models_Rest_Read_Controller {
 				$result[ $related_model_part ] = self::get_entities_from_relation( $result[ $model->primary_key_name() ], $relation_obj, array(), implode(',',self::extract_includes_for_this_model( $include, $relation_name ) ) );
 			}
 		}
-		$result = apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__deduce_fields_n_values_form_cols_n_values_except_fks', $result, $model );
-		return $result;
+		$result = apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_entity_from_wpdb_results__entity_before_innaccessible_field_removal', $result, $model );
+		$result = EE_REST_API_Capabilities::filter_out_inaccessible_entity_fields( $result, $model, WP_JSON_Server::READABLE );
+		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_entity_from_wpdb_results__entity_return', $result, $model );
 	}
 
 	/**
@@ -298,8 +299,13 @@ class EE_Models_Rest_Read_Controller {
 		if( $model instanceof EEM_Soft_Delete_Base ){
 			$query_params = $model->alter_query_params_so_deleted_and_undeleted_items_included($query_params);
 		}
-		$restricted_query_params = EE_REST_API_Capabilities::add_restrictions_onto_query( $query_params, $model->get_this_model_name(), WP_JSON_Server::READABLE );
-		$model_rows = $model->get_all_wpdb_results( $restricted_query_params );
+		$restricted_query_params = EE_REST_API_Capabilities::add_restrictions_onto_query( $query_params, $model, WP_JSON_Server::READABLE );
+		if( $restricted_query_params === false ) {
+			//if the query params are literally the value FALSE, don't bother going to the DB
+			$model_rows = array();
+		}else{
+			$model_rows = $model->get_all_wpdb_results( $restricted_query_params );
+		}
 		if ( ! empty ( $model_rows ) ) {
 			return self::create_entity_from_wpdb_result( $model, array_shift( $model_rows ), $include );
 		} else {
@@ -349,7 +355,7 @@ class EE_Models_Rest_Read_Controller {
 		if ( isset( $filter[ 'mine' ] ) ){
 			$model_query_params = $model->alter_query_params_to_only_include_mine( $model_query_params );
 		}
-		$model_query_params = EE_REST_API_Capabilities::add_restrictions_onto_query( $model_query_params, $model->get_this_model_name(), WP_JSON_Server::READABLE );
+		$model_query_params = EE_REST_API_Capabilities::add_restrictions_onto_query( $model_query_params, $model, WP_JSON_Server::READABLE );
 		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_model_query_params', $model_query_params, $filter, $model );
 	}
 

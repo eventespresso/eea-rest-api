@@ -27,21 +27,43 @@ class EE_REST_API_Capabilities {
 	 */
 	public static function get_access_restrictions() {
 		if( ! self::$_access_restrictions ) {
+			$event_editing_restrictions = array(
+				//in order to edit an event you need this permission
+				'ee_edit_events' => new EE_API_Access_Entity_Never()
+			);
 			$restrictions = array(
 				'Event' => array(
 					 WP_JSON_Server::READABLE => array(
 						 '*' => array(
 							 //if they can't read events (in the admin) only show them ones they can see on the frontend
-							 'ee_read_events' => new EE_API_Access_Entity_If( array( 'status' => 'publish', 'Datetime.DTT_EVT_end' => array( '>=', current_time('mysql' ) ) ) ),
+							 'ee_read_events' => new EE_API_Access_Entity_If( array( 'status' => 'publish', //'Datetime.DTT_EVT_end' => array( '>=', current_time('mysql' ) )
+								 ) ),
 
-						 )
+
+						 ),
+						 'EVT_desc_raw' => $event_editing_restrictions//only show them the EVT_desc_raw if they can edit the event
+
 					 )
 				),
 				'Answer' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Registration' => array(
 				WP_JSON_Server::READABLE => array(
 					'*' => array(
 						//allow full access to anyone
-						)
+					)
+				)
+				),
+				'Status' => array(
+				WP_JSON_Server::READABLE => array(
+					'*' => array(
+						//anyone can see stati
+					)
 				)
 				)
 			);
@@ -77,15 +99,25 @@ class EE_REST_API_Capabilities {
 	}
 
 	/**
-	 *
-	 * @param string $model_name
+	 * The current user can see at least SOME of these entities. If a field is provided
+	 * returns whether the current user can access that field on at least some entities
+	 * (tests whether it's possible for them to access any; not whether there actually ARE
+	 * some currently in existence)
+	 * @param EEM_Base $model
 	 * @param type $request_type
 	 * @return boolean
 	 */
-	public static function current_user_can_access_any( $model_name, $request_type = WP_JSON_Server::READABLE ) {
+	public static function current_user_has_partial_access_to( $model, $request_type = WP_JSON_Server::READABLE, $field_name = '*' ) {
 		$access_restrictions = self::get_access_restrictions();
-		if( isset( $access_restrictions[ $model_name ] ) && isset( $access_restrictions[ $model_name ][ $request_type ] ) && isset( $access_restrictions[ $model_name ][ $request_type ][ '*' ] ) ) {
-			foreach( $access_restrictions[ $model_name ][ $request_type ][ '*' ] as $capability => $restriction ) {
+		if( isset( $access_restrictions[ $model->get_this_model_name() ] ) && isset( $access_restrictions[ $model->get_this_model_name() ][ $request_type ] ) ) {
+			if( isset( $access_restrictions[ $model->get_this_model_name() ][ $request_type ][ $field_name ] ) ) {
+				$field_to_use = $field_name;
+			}elseif( isset( $access_restrictions[ $model->get_this_model_name() ][ $request_type ][ '*' ] ) ){
+				$field_to_use = '*';
+			}else{
+				throw new EE_Error( sprintf( __( 'Could not find default query params for model %s on request type %s because restrictions array setup improperly. There should be an entry for "*" but there is only %s', 'event_espresso' ), $model->get_this_model_name(), $request_type, implode(',', array_keys( $access_restrictions[ $model->get_this_model_name() ][ $request_type ] ) ) ) );
+			}
+			foreach( $access_restrictions[ $model->get_this_model_name() ][ $request_type ][ $field_to_use ] as $capability => $restriction ) {
 				//check that we're not missing a critical capability
 				if( ! current_user_can( $capability ) && $restriction instanceof EE_API_Access_Entity_Never ){
 					return false;
@@ -93,23 +125,25 @@ class EE_REST_API_Capabilities {
 			}
 			return true;
 		}else{
+			//no restrictions defined for this model or request type. It mustn't be accessible
 			return false;
 		}
 	}
 	/**
 	 * Gets an array of all the capabilities the current user is missing that affected
 	 * the query
-	 * @param string $model_name
+	 * @param EEM_Base $model
 	 * @param int $request_type one of the consts on WP_JSON_Server
 	 * @return array
 	 */
-	public static function get_missing_permissions( $model_name, $request_type = WP_JSON_Server::READABLE ) {
+	public static function get_missing_permissions( $model, $request_type = WP_JSON_Server::READABLE ) {
 		$caps_missing = array();
 		$access_restrictions = self::get_access_restrictions();
-		if( isset( $access_restrictions[ $model_name ] ) && isset( $access_restrictions[ $model_name ][ $request_type ] ) && isset( $access_restrictions[ $model_name ][ $request_type ][ '*' ] ) ) {
-			foreach( $access_restrictions[ $model_name ][ $request_type ][ '*' ] as $capability => $restriction ) {
+		if( isset( $access_restrictions[ $model->get_this_model_name() ] ) && isset( $access_restrictions[ $model->get_this_model_name() ][ $request_type ] ) && isset( $access_restrictions[ $model->get_this_model_name() ][ $request_type ][ '*' ] ) ) {
+			foreach( $access_restrictions[ $model->get_this_model_name() ][ $request_type ][ '*' ] as $capability => $restriction ) {
 				//check that we're not missing a critical capability
-				if( ! current_user_can( $capability ) ){
+				if( ! EE_Registry::instance()->CAP->current_user_can( $capability, 'ee_api_get_missing_permissions' )
+ ){
 					$caps_missing[] = $capability;
 				}
 			}
@@ -121,12 +155,12 @@ class EE_REST_API_Capabilities {
 	/**
 	 * Gets a string of all the capabilities the current user is missing that affected
 	 * the query
-	 * @param string $model_name
+	 * @param EEM_Base $model
 	 * @param int $request_type one of the consts on WP_JSON_Server
 	 * @return string
 	 */
-	public static function get_missing_permissions_string( $model_name, $request_type = WP_JSON_Server::READABLE ) {
-		return implode(',', self::get_missing_permissions( $model_name, $request_type ) );
+	public static function get_missing_permissions_string( $model, $request_type = WP_JSON_Server::READABLE ) {
+		return implode(',', self::get_missing_permissions( $model, $request_type ) );
 	}
 
 	/**
@@ -134,32 +168,105 @@ class EE_REST_API_Capabilities {
 	 * are missing, we instead impose restrictions on the database query).
 	 * If there is a restriction that means we shouldn't return ANYTHING, just return false.
 	 * Client code will need to understand what false means.
-	 * @param array $original_query_params @see EEM_Base::get_all
-	 * @param string $model_name
+	 * @param array $query_params @see EEM_Base::get_all
+	 * @param EEM_Base $model
 	 * @param int $request_type like a const on WP_JSON_Server
 	 * @return boolean
 	 */
-	public static function add_restrictions_onto_query( $original_query_params, $model_name, $request_type = WP_JSON_Server::READABLE ) {
+	public static function add_restrictions_onto_query( $query_params, $model, $request_type = WP_JSON_Server::READABLE, $field_name = '*' ) {
 		$access_restrictions = self::get_access_restrictions();
-		if( isset( $access_restrictions[ $model_name ] ) && isset( $access_restrictions[ $model_name ][ $request_type ] ) && isset( $access_restrictions[ $model_name ][ $request_type ][ '*' ] ) ) {
-			foreach( $access_restrictions[ $model_name ][ $request_type ][ '*' ] as $capability => $restriction ) {
+		if( isset( $access_restrictions[ $model->get_this_model_name() ] ) && isset( $access_restrictions[ $model->get_this_model_name() ][ $request_type ] ) ) {
+			if( isset( $access_restrictions[ $model->get_this_model_name() ][ $request_type ][ $field_name ] ) ) {
+				$field_to_use = $field_name;
+			}elseif( isset( $access_restrictions[ $model->get_this_model_name() ][ $request_type ][ '*' ] ) ){
+				$field_to_use = '*';
+			}else{
+				throw new EE_Error( sprintf( __( 'Could not find default query params for model %s on request type %s because restrictions array setup improperly. There should be an entry for "*" but there is only %s', 'event_espresso' ), $model->get_this_model_name(), $request_type, implode(',', array_keys( $access_restrictions[ $model->get_this_model_name() ][ $request_type ] ) ) ) );
+			}
+			foreach( $access_restrictions[ $model->get_this_model_name() ][ $request_type ][ $field_to_use ] as $capability => $restriction ) {
 				//check that we're not missing a critical capability
-				if( ! current_user_can( $capability ) ){
+				if( ! EE_Registry::instance()->CAP->current_user_can( $capability, 'ee_api_add_restrictions_onto_query' ) ){
 					//missing this permission is a deal-breaker
 					if( $restriction instanceof EE_API_Access_Entity_Never ){
 						return false;
 					}
-					if( ! isset( $original_query_params[0] ) ){
-						$original_query_params[0] = array();
+					if( ! isset( $query_params[0] ) ){
+						$query_params[0] = array();
 					}
-					$original_query_params[0] = array_replace( $original_query_params[0], $restriction->get_where_conditions() );
+					$query_params[0] = array_replace( $query_params[0], $restriction->get_where_conditions() );
 				}
 			}
-			return $original_query_params;
+			return $query_params;
 		}else{
 			//there's no entry, so really no one should be able to access this
 			return false;
 		}
+	}
+	/**
+	 * Can the current user access all entries in this field?
+	 * @param EEM_Base $model
+	 * @param int $request_type const on WP_JSON_Server
+	 * @param string $field_name entity field name
+	 * @return boolean
+	 */
+	public static function current_user_has_full_access_to( $model, $request_type, $field_name, $entity_id = null ) {
+		$access_restrictions = self::get_access_restrictions();
+		if( isset( $access_restrictions[ $model->get_this_model_name() ] ) && isset( $access_restrictions[ $model->get_this_model_name() ][ $request_type ] ) ) {
+			if( $entity_id ) {
+				//great now let's see if it's findable by applying the default query params
+				$query_params = array( array( $model->primary_key_name() => $entity_id ) );
+				$query_params = self::add_restrictions_onto_query($query_params, $model, $request_type, $field_name );
+				if( $query_params !== false && $model->exists( $query_params ) ) {
+					return true;
+				} else {
+					return false;
+				}
+			}else{
+				//no ID provided. So can they access this field on SOME items?
+				//eg, can they use this field in querying? yes if they can sometimes read it
+				return self::current_user_has_partial_access_to($model, $request_type, $field_name);
+			}
+//			$query_params = array( array( $model->primary_key_name() => $entity_id ))
+			//determine which items in the current query can access
+
+		}else{
+			return false;
+		}
+	}
+
+	/**
+	 * Takes a entity that's ready to be returned
+	 * @param type $entity
+	 * @param EEM_Base $model
+	 * @param type $request_type
+	 * @return type
+	 */
+	public static function filter_out_inaccessible_entity_fields( $entity, $model, $request_type = WP_JSON_Server::READABLE ) {
+		$entity_filtered = array();
+		$access_restrictions = EE_REST_API_Capabilities::get_access_restrictions();
+		if( isset( $access_restrictions[ $model->get_this_model_name() ] ) &&
+				isset( $access_restrictions[ $model->get_this_model_name() ][ $request_type ] ) ) {
+			if( ! isset( $entity[ $model->primary_key_name() ] ) ){
+				throw new EE_Error( sprintf( __( 'Entity\'s primary key could not be found in results (could not find a key "%s" among %s when filtering ou inaccessible entity fields for model %s)', 'event_espresso' ), $model->primary_key_name(), implode(',', array_keys( $entity ) ), $model->get_this_model_name() ) );
+			}
+			$entity_id = $entity[ $model->primary_key_name() ];
+			foreach( $entity as $field_name => $value ) {
+				if( EE_REST_API_Capabilities::current_user_has_full_access_to( $model, $request_type, $field_name, $entity_id ) || $model->has_relation( $field_name ) ){
+					$entity_filtered[ $field_name ] = $value;
+				}
+			}
+			return $entity_filtered;
+		}else{
+			//there's no entry for this model. that's weird
+			return array();
+		}
+	}
+
+	/**
+	 * Resets the access restrictions
+	 */
+	public static function reset() {
+		self::$_access_restrictions = null;
 	}
 }
 
@@ -207,7 +314,8 @@ class EE_API_Access_Entity_If extends EE_API_Access_Restriction{
  */
 class EE_API_Access_Entity_If_Owner extends EE_API_Access_Restriction{
 	public function get_where_conditions() {
-		return $this->_get_model()->alter_query_params_to_only_include_mine();
+		$full_query_params = $this->_get_model()->alter_query_params_to_only_include_mine();
+		return $full_query_params[0];
 	}
 }
 /**
