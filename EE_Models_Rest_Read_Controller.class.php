@@ -346,9 +346,6 @@ class EE_Models_Rest_Read_Controller {
 		if ( isset( $filter[ 'order' ] ) ) {
 			$model_query_params[ 'order' ] = $filter[ 'order' ];
 		}
-		if ( isset( $filter[ 'default_where_conditions' ] ) ) {
-			$model_query_params[ 'default_where_conditions' ] = $filter[ 'default_where_conditions' ];
-		}
 		if ( isset( $filter[ 'mine' ] ) ){
 			$model_query_params = $model->alter_query_params_to_only_include_mine( $model_query_params );
 		}
