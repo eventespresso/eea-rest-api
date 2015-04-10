@@ -246,7 +246,7 @@ class EE_Models_Rest_Read_Controller {
 	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
 	 */
 	public static function create_entity_from_wpdb_result( $model, $db_row, $include ) {
-		$result = $model->_deduce_fields_n_values_from_cols_n_values( $db_row );
+		$result = $model->deduce_fields_n_values_from_cols_n_values( $db_row );
 		foreach( $result as $field_name => $raw_field_value ) {
 			$field_obj = $model->field_settings_for($field_name);
 			$field_value = $field_obj->prepare_for_set_from_db( $raw_field_value );
