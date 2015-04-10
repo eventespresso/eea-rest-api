@@ -32,19 +32,6 @@ class EE_REST_API_Capabilities {
 				'ee_edit_events' => new EE_API_Access_Entity_Never()
 			);
 			$restrictions = array(
-				'Event' => array(
-					 WP_JSON_Server::READABLE => array(
-						 '*' => array(
-							 //if they can't read events (in the admin) only show them ones they can see on the frontend
-							 'ee_read_events' => new EE_API_Access_Entity_If( array( 'status' => 'publish', //'Datetime.DTT_EVT_end' => array( '>=', current_time('mysql' ) )
-								 ) ),
-
-
-						 ),
-						 'EVT_desc_raw' => $event_editing_restrictions//only show them the EVT_desc_raw if they can edit the event
-
-					 )
-				),
 				'Answer' => array(
 					WP_JSON_Server::READABLE => array(
 						'*' => array(
@@ -52,20 +39,264 @@ class EE_REST_API_Capabilities {
 							)
 					)
 				),
-//				'Registration' => array(
-//				WP_JSON_Server::READABLE => array(
-//					'*' => array(
-//						//allow full access to anyone
-//					)
-//				)
-//				),
+				'Attendee' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Change_Log' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Checkin' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Country' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Currency' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Currency_Payment_Method' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Datetime' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Datetime_Ticket' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Event' => array(
+					 WP_JSON_Server::READABLE => array(
+						 '*' => array(
+							 //if they can't read events (in the admin) only show them ones they can see on the frontend
+							 'ee_read_events' => new EE_API_Access_Entity_If( array( 'status' => 'publish', //'Datetime.DTT_EVT_end' => array( '>=', current_time('mysql' ) )
+								 ) ),
+							 //without 'ee_read_private_events' don't show others' private events
+							 'ee_read_private_events' => new EE_API_Access_Entity_If( array( 'NOT*no_others_private_events' => array( 'status' => 'private', 'EVT_wp_user' => array( '!=', get_current_user_id() ) ) ) )
+						 ),
+						 'EVT_desc_raw' => $event_editing_restrictions//only show them the EVT_desc_raw if they can edit the event
+
+					 )
+				),
+				'Event_Message_Template' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Event_Question_Group' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Event_Venue' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Extra_Meta' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Line_Item' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Message_Template' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Message_Template_Group' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Payment' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Payment_Method' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Price' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Price_Type' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Question' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Question_Group' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Question_Group_Question' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Question_Option' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Registration' => array(
+				WP_JSON_Server::READABLE => array(
+					'*' => array(
+						//allow full access to anyone
+					)
+				)
+				),
+				'State' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
 				'Status' => array(
 				WP_JSON_Server::READABLE => array(
 					'*' => array(
 						//anyone can see stati
 					)
 				)
-				)
+				),
+				'Term' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Term_Relationship' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Term_Taxonomy' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Ticket' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Ticket_Price' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Ticket_Template' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Transaction' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'Venue' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
+				'WP_User' => array(
+					WP_JSON_Server::READABLE => array(
+						'*' => array(
+							//allow full access to anyone
+							)
+					)
+				),
 			);
 			foreach( EE_Registry::instance()->non_abstract_db_models as $model_name => $model_classname ) {
 				if( ! isset( $restrictions[ $model_name ] ) ) {

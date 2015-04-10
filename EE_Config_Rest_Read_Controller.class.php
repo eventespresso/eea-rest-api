@@ -16,7 +16,7 @@ if ( !defined( 'EVENT_ESPRESSO_VERSION' ) ) {
  */
 class EE_Config_Rest_Read_Controller {
 	public static function handle_request() {
-		return EE_Config::instance();
+			return EE_Config::instance();
 	}
 }
 
