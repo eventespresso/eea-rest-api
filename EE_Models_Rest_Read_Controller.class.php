@@ -156,11 +156,20 @@ class EE_Models_Rest_Read_Controller {
 
 				$model = EE_Registry::instance()->load_model( $main_model_name_singular );
 				$relation_settings = $model->related_settings_for( $related_model_name_singular );
-				if( EE_REST_API_Capabilities::current_user_has_partial_access_to( $relation_settings->get_other_model(), WP_JSON_Server::READABLE ) ){
+
+				//check if they can access the 1st model object
+				$query_params = array( array( $model->primary_key_name() => $id ),'limit' => 1 );
+				if( $model instanceof EEM_Soft_Delete_Base ){
+					$query_params = $model->alter_query_params_so_deleted_and_undeleted_items_included($query_params);
+				}
+				$restricted_query_params = EE_REST_API_Capabilities::add_restrictions_onto_query( $query_params, $model, WP_JSON_Server::READABLE );
+				self::_set_debug_info( 'main model query params', $restricted_query_params );
+				if( EE_REST_API_Capabilities::current_user_has_partial_access_to( $relation_settings->get_other_model(), WP_JSON_Server::READABLE ) &&
+				$model->exists( $restricted_query_params ) ){
 					self::_set_debug_info( 'missing caps', EE_REST_API_Capabilities::get_missing_permissions_string( $relation_settings->get_other_model(), WP_JSON_Server::READABLE ) );
 					return self::send_response( self::get_entities_from_relation( $id, $relation_settings, $filter, $include ) );
 				}else{
-					return new WP_Error( sprintf( 'json_%s_cannot_list', $related_model_name_maybe_plural ), sprintf( __( 'Sorry, you are not allowed to list %s related to %s. Missing permissions: %s' ), $related_model_name_maybe_plural, $main_model_name_plural, EE_REST_API_Capabilities::get_missing_permissions_string( $relation_settings->get_other_model(), WP_JSON_Server::READABLE ) ), array( 'status' => 403 ) );
+					return new WP_Error( sprintf( 'json_%s_cannot_list', $related_model_name_maybe_plural ), sprintf( __( 'Sorry, you are not allowed to list %s related to %s. Missing permissions: %s' ), $related_model_name_maybe_plural, $main_model_name_plural, implode(',', array_merge( EE_REST_API_Capabilities::get_missing_permissions( $relation_settings->get_other_model(), WP_JSON_Server::READABLE ) , EE_REST_API_Capabilities::get_missing_permissions( $relation_settings->get_this_model(), WP_JSON_Server::READABLE ) ) )  ), array( 'status' => 403 ) );
 				}
 			}
 		}catch( EE_Error $e ){
@@ -180,12 +189,7 @@ class EE_Models_Rest_Read_Controller {
 	public static function get_entities_from_model( $model, $filter, $include ) {
 		$query_params = self::create_model_query_params( $model, $filter );
 		self::_set_debug_info( 'model query params', $query_params );
-		if( $query_params === false ) {
-			//don't even bother querying
-			$results = array();
-		} else {
-			$results = $model->get_all_wpdb_results( $query_params );
-		}
+		$results = $model->get_all_wpdb_results( $query_params );
 		$nice_results = array( );
 		foreach ( $results as $result ) {
 			$nice_results[ ] = self::create_entity_from_wpdb_result( $model, $result, $include );
@@ -208,14 +212,9 @@ class EE_Models_Rest_Read_Controller {
 	public static function get_entities_from_relation( $id,  $relation, $filter, $include ) {
 		$query_params = self::create_model_query_params( $relation->get_other_model(), $filter );
 		self::_set_debug_info( 'model query params', $query_params );
-		if( $query_params === false ){
-			//a restriction indicated it wanted nothing to be returned, so dont even query
-			$results = array();
-		}else{
-			$query_params[0][ $relation->get_this_model()->get_this_model_name() . '.' . $relation->get_this_model()->primary_key_name() ] = $id;
-			$query_params[ 'default_where_conditions' ] = 'none';
-			$results = $relation->get_other_model()->get_all_wpdb_results( $query_params );
-		}
+		$query_params[0][ $relation->get_this_model()->get_this_model_name() . '.' . $relation->get_this_model()->primary_key_name() ] = $id;
+		$query_params[ 'default_where_conditions' ] = 'none';
+		$results = $relation->get_other_model()->get_all_wpdb_results( $query_params );
 		$nice_results = array();
 		foreach( $results as $result ) {
 			$nice_result = self::create_entity_from_wpdb_result( $relation->get_other_model(), $result, $include );
@@ -329,12 +328,7 @@ class EE_Models_Rest_Read_Controller {
 		}
 		$restricted_query_params = EE_REST_API_Capabilities::add_restrictions_onto_query( $query_params, $model, WP_JSON_Server::READABLE );
 		self::_set_debug_info( 'model query params', $restricted_query_params );
-		if( $restricted_query_params === false ) {
-			//if the query params are literally the value FALSE, don't bother going to the DB
-			$model_rows = array();
-		}else{
-			$model_rows = $model->get_all_wpdb_results( $restricted_query_params );
-		}
+		$model_rows = $model->get_all_wpdb_results( $restricted_query_params );
 		if ( ! empty ( $model_rows ) ) {
 			return self::create_entity_from_wpdb_result( $model, array_shift( $model_rows ), $include );
 		} else {
@@ -383,6 +377,11 @@ class EE_Models_Rest_Read_Controller {
 		}
 		if ( isset( $filter[ 'mine' ] ) ){
 			$model_query_params = $model->alter_query_params_to_only_include_mine( $model_query_params );
+		}
+		if( isset( $filter[ 'limit' ] ) ) {
+			$model_query_params[ 'limit' ] = $filter[ 'limit' ];
+		}else{
+			$model_query_params[ 'limit' ] = 50;
 		}
 		$model_query_params = EE_REST_API_Capabilities::add_restrictions_onto_query( $model_query_params, $model, WP_JSON_Server::READABLE );
 		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_model_query_params', $model_query_params, $filter, $model );

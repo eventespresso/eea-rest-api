@@ -237,21 +237,30 @@ class EE_REST_API_Capabilities {
 				'Term' => array(
 					WP_JSON_Server::READABLE => array(
 						'*' => array(
-							//allow full access to anyone
+							//don't show event categories if they can't see those
+							'ee_manage_event_categories' => new EE_API_Access_Entity_If( array( 'Term_Taxonomy.taxonomy*no_event_cats' => array( '!=', 'espresso_event_categories' ) ) ),
+							//dont' show venue categories if they can't see those
+							'ee_manage_venue_categories' => new EE_API_Access_Entity_If( array( 'Term_Taxonomy.taxonomy*no_venue_cats' => array( '!=', 'espresso_venue_categories' ) ) ),
 							)
 					)
 				),
 				'Term_Relationship' => array(
 					WP_JSON_Server::READABLE => array(
 						'*' => array(
-							//allow full access to anyone
+							//don't show event categories if they can't see those
+							'ee_manage_event_categories' => new EE_API_Access_Entity_If( array( 'Event.EVT_ID' => array( 'IS_NULL' ) ) ),
+							//dont' show venue categories if they can't see those
+							'ee_manage_venue_categories' => new EE_API_Access_Entity_If( array( 'Venue.VNU_ID' => array( 'IS_NULL' ) ) ),
 							)
 					)
 				),
 				'Term_Taxonomy' => array(
 					WP_JSON_Server::READABLE => array(
 						'*' => array(
-							//allow full access to anyone
+							//don't show event categories if they can't see those
+							'ee_manage_event_categories' => new EE_API_Access_Entity_If( array( 'Event.EVT_ID' => array( 'IS_NULL' ) ) ),
+							//dont' show venue categories if they can't see those
+							'ee_manage_venue_categories' => new EE_API_Access_Entity_If( array( 'Venue.VNU_ID' => array( 'IS_NULL' ) ) ),
 							)
 					)
 				),
@@ -418,9 +427,6 @@ class EE_REST_API_Capabilities {
 				//check that we're not missing a critical capability
 				if( ! EE_Registry::instance()->CAP->current_user_can( $capability, 'ee_api_add_restrictions_onto_query' ) ){
 					//missing this permission is a deal-breaker
-					if( $restriction instanceof EE_API_Access_Entity_Never ){
-						return false;
-					}
 					if( ! isset( $query_params[0] ) ){
 						$query_params[0] = array();
 					}
@@ -559,10 +565,10 @@ class EE_API_Access_Entity_Never extends EE_API_Access_Restriction{
 	public function get_where_conditions() {
 		$model = $this->_get_model();
 		if( $model->has_primary_key_field() ) {
-			return array( $model->primary_key_name() => -1 );
+			return array( $model->primary_key_name() => array('<', 0 ) );
 		}else{
 			$fk_field = $model->get_a_field_of_type( 'EE_Foreign_Key_Field_Base' );
-			return array( $fk_field->get_name() => -1 );
+			return array( 'AND*impossible' => array( $fk_field->get_name() => array('IS_NULL'), $fk_field->get_name() => 'IS_NOT_NULL' ) );
 		}
 	}
 }

@@ -105,6 +105,8 @@ class EED_REST_API extends EED_Module {
 	 */
 	protected function _register_model_routes() {
 		$models_to_register = EE_Registry::instance()->non_abstract_db_models;
+		//let's not bother having endpoints for extra metas
+		unset($models_to_register['Extra_Meta']);
 		$model_routes = array( );
 		foreach ( $models_to_register as $model_name => $model_classname ) {
 			//yes we could jsut register one route for ALL models, but then they wouldn't show up in the index
@@ -173,7 +175,7 @@ class EED_REST_API extends EED_Module {
 	}
 
 
-	
+
 }
 
 // End of file EED_REST_API.module.php
