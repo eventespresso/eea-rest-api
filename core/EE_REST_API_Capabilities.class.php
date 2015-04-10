@@ -52,13 +52,13 @@ class EE_REST_API_Capabilities {
 							)
 					)
 				),
-				'Registration' => array(
-				WP_JSON_Server::READABLE => array(
-					'*' => array(
-						//allow full access to anyone
-					)
-				)
-				),
+//				'Registration' => array(
+//				WP_JSON_Server::READABLE => array(
+//					'*' => array(
+//						//allow full access to anyone
+//					)
+//				)
+//				),
 				'Status' => array(
 				WP_JSON_Server::READABLE => array(
 					'*' => array(

@@ -173,7 +173,7 @@ class EED_REST_API extends EED_Module {
 	}
 
 
-
+	
 }
 
 // End of file EED_REST_API.module.php

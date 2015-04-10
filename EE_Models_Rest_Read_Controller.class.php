@@ -16,6 +16,11 @@ if ( !defined( 'EVENT_ESPRESSO_VERSION' ) ) {
  */
 class EE_Models_Rest_Read_Controller {
 	/**
+	 * Contains debug info we'll send back in the response headers
+	 * @var array
+	 */
+	static $_debug_info = array();
+	/**
 	 * Handles requests to get all (or a filtered subset) of entities for a particular model
 	 * @param string $_path
 	 * @param array $filter The query parameters to be passed onto the EE models system.
@@ -29,7 +34,7 @@ class EE_Models_Rest_Read_Controller {
 	 * "tickets":[{"TKT_ID":234,"TKT_name":"student rate","TKT_price":32.0},...]}]}', ie, events with all
 	 * their associated datetimes (including ones that are trashed) embedded in the json object, and each
 	 * datetime also has each associated ticket embedded in its json object.
-	 * @return array
+	 * @return WP_JSON_Response|WP_Error
 	 */
 	public static function handle_request_get_all( $_path, $filter = array(), $include = '*' ) {
 		$inflector = new Inflector();
@@ -43,7 +48,8 @@ class EE_Models_Rest_Read_Controller {
 			}
 			$model = EE_Registry::instance()->load_model( $model_name_singular );
 			if( EE_REST_API_Capabilities::current_user_has_partial_access_to( $model, WP_JSON_Server::READABLE ) ){
-				return self::get_entities_from_model( $model, $filter, $include );
+				self::_set_debug_info( 'missing caps', EE_REST_API_Capabilities::get_missing_permissions_string( $model, WP_JSON_Server::READABLE ) );
+				return self::send_response( self::get_entities_from_model( $model, $filter, $include ) );
 			}else{
 				return new WP_Error( sprintf( 'json_%s_cannot_list', $model_name_plural ), sprintf( __( 'Sorry, you are not allowed to list %s. Missing permissions: %s' ), $model_name_plural, EE_REST_API_Capabilities::get_missing_permissions_string( $model, WP_JSON_Server::READABLE ) ), array( 'status' => 403 ) );
 			}
@@ -57,7 +63,7 @@ class EE_Models_Rest_Read_Controller {
 	 * @param string $_path
 	 * @param array $filter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
 	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
-	 * @return array
+	 * @return WP_JSON_Response|WP_Error
 	 */
 	public static function handle_request_get_all_mine( $_path, $filter = array(), $include = '*' ) {
 		$inflector = new Inflector();
@@ -75,7 +81,8 @@ class EE_Models_Rest_Read_Controller {
 			}
 			if( EE_REST_API_Capabilities::current_user_has_partial_access_to( $model, WP_JSON_Server::READABLE ) ){
 				$filter['mine'] = 1;
-				return self::get_entities_from_model( $model, $filter, $include );
+				self::_set_debug_info( 'missing caps', EE_REST_API_Capabilities::get_missing_permissions_string( $model, WP_JSON_Server::READABLE ) );
+				return self::send_response( self::get_entities_from_model( $model, $filter, $include ) );
 			}else{
 				return new WP_Error( sprintf( 'json_%s_cannot_list', $model_name_plural ), sprintf( __( 'Sorry, you are not allowed to list %s. Missing permissions: %s' ), $model_name_plural, EE_REST_API_Capabilities::get_missing_permissions_string( $model, WP_JSON_Server::READABLE ) ), array( 'status' => 403 ) );
 			}
@@ -89,7 +96,7 @@ class EE_Models_Rest_Read_Controller {
 	 * @param string $_path
 	 * @param string $id ID of the thing to be retrieved
 	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
-	 * @return array|WP_Error
+	 * @return WP_JSON_Response|WP_Error
 	 */
 	public static function handle_request_get_one( $_path, $id, $include = '*' ) {
 		$inflector = new Inflector();
@@ -102,7 +109,8 @@ class EE_Models_Rest_Read_Controller {
 				return new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) );
 			}
 			$model = EE_Registry::instance()->load_model( $model_name_singular );
-			return self::get_entity_from_model( $model, $id, $include );
+			self::_set_debug_info( 'missing caps', EE_REST_API_Capabilities::get_missing_permissions_string( $model, WP_JSON_Server::READABLE ) );
+			return self::send_response( self::get_entity_from_model( $model, $id, $include ) );
 		}else{
 			return new WP_Error( 'endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
 		}
@@ -116,7 +124,7 @@ class EE_Models_Rest_Read_Controller {
 	 * @param string $id
 	 * @param array $filter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
 	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
-	 * @return array|WP_Error
+	 * @return WP_JSON_Response|WP_Error
 	 */
 	public static function handle_request_get_related( $_path, $id, $filter = array(), $include = '*' ) {
 		$regex = '~' . EED_REST_API::ee_api_namespace_for_regex . '(.*)/(.*)/(.*)~';
@@ -136,7 +144,8 @@ class EE_Models_Rest_Read_Controller {
 			$model = EE_Registry::instance()->load_model( $main_model_name_singular );
 			$relation_settings = $model->related_settings_for( $related_model_name_singular );
 			if( EE_REST_API_Capabilities::current_user_has_partial_access_to( $relation_settings->get_other_model(), WP_JSON_Server::READABLE ) ){
-				return self::get_entities_from_relation( $id, $relation_settings, $filter, $include );
+				self::_set_debug_info( 'missing caps', EE_REST_API_Capabilities::get_missing_permissions_string( $relation_settings->get_other_model(), WP_JSON_Server::READABLE ) );
+				return self::send_response( self::get_entities_from_relation( $id, $relation_settings, $filter, $include ) );
 			}else{
 				return new WP_Error( sprintf( 'json_%s_cannot_list', $related_model_name_maybe_plural ), sprintf( __( 'Sorry, you are not allowed to list %s related to %s. Missing permissions: %s' ), $related_model_name_maybe_plural, $main_model_name_plural, EE_REST_API_Capabilities::get_missing_permissions_string( $relation_settings->get_other_model(), WP_JSON_Server::READABLE ) ), array( 'status' => 403 ) );
 			}
@@ -154,6 +163,7 @@ class EE_Models_Rest_Read_Controller {
 	 */
 	public static function get_entities_from_model( $model, $filter, $include ) {
 		$query_params = self::create_model_query_params( $model, $filter );
+		self::_set_debug_info( 'model query params', $query_params );
 		if( $query_params === false ) {
 			//don't even bother querying
 			$results = array();
@@ -181,6 +191,7 @@ class EE_Models_Rest_Read_Controller {
 	 */
 	public static function get_entities_from_relation( $id,  $relation, $filter, $include ) {
 		$query_params = self::create_model_query_params( $relation->get_other_model(), $filter );
+		self::_set_debug_info( 'model query params', $query_params );
 		if( $query_params === false ){
 			//a restriction indicated it wanted nothing to be returned, so dont even query
 			$results = array();
@@ -265,8 +276,9 @@ class EE_Models_Rest_Read_Controller {
 			}
 		}
 		$result = apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_entity_from_wpdb_results__entity_before_innaccessible_field_removal', $result, $model );
-		$result = EE_REST_API_Capabilities::filter_out_inaccessible_entity_fields( $result, $model, WP_JSON_Server::READABLE );
-		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_entity_from_wpdb_results__entity_return', $result, $model );
+		$result_without_inaccessible_fields = EE_REST_API_Capabilities::filter_out_inaccessible_entity_fields( $result, $model, WP_JSON_Server::READABLE );
+		self::_set_debug_info( 'inaccessible fields', array_keys( array_diff_key( $result, $result_without_inaccessible_fields ) ) );
+		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_entity_from_wpdb_results__entity_return', $result_without_inaccessible_fields, $model );
 	}
 
 	/**
@@ -300,6 +312,7 @@ class EE_Models_Rest_Read_Controller {
 			$query_params = $model->alter_query_params_so_deleted_and_undeleted_items_included($query_params);
 		}
 		$restricted_query_params = EE_REST_API_Capabilities::add_restrictions_onto_query( $query_params, $model, WP_JSON_Server::READABLE );
+		self::_set_debug_info( 'model query params', $restricted_query_params );
 		if( $restricted_query_params === false ) {
 			//if the query params are literally the value FALSE, don't bother going to the DB
 			$model_rows = array();
@@ -396,6 +409,38 @@ class EE_Models_Rest_Read_Controller {
 		}
 		return $extracted_fields_to_include;
 
+	}
+
+
+	/**
+	 * Sends a response, but also makes sure to attach headers that
+	 * are handy for debugging.
+	 * Specifically, we assume folks will want to know what exactly was the DB query that got run,
+	 * what exactly was the Models query that got run, what capabilities came into play, what fields were ommitted from the response, others?
+	 * @param array|WP_Error $response
+	 */
+	protected static function send_response( $response ) {
+		if( $response instanceof WP_Error ) {
+			return $response;
+		}else{
+			$headers = array();
+			foreach( self::$_debug_info  as $debug_key => $debug_info ) {
+				if( is_array( $debug_info ) ) {
+					$debug_info = json_encode( $debug_info );
+				}
+				$headers[ 'X-EE4-Debug-' . ucwords( $debug_key ) ] = $debug_info;
+			}
+			return new WP_JSON_Response( $response, 200,  $headers );
+		}
+	}
+
+	/**
+	 * Sets some debug info that we'll send back in headers
+	 * @param string $key
+	 * @param string|array $info
+	 */
+	protected static function _set_debug_info( $key, $info ){
+		self::$_debug_info[ $key ] = $info;
 	}
 }
 

@@ -47,7 +47,8 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 
 	public function test_handle_request_get_one__event_includes() {
 		$event = $this->new_model_obj_with_dependencies( 'Event', array( 'status' => 'publish' ) );
-		$result = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'events/' . $event->ID(), $event->ID(), 'EVT_ID,EVT_name' );
+		$response = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'events/' . $event->ID(), $event->ID(), 'EVT_ID,EVT_name' );
+		$result = $response->get_data();
 		$this->assertEquals(
 			array (
 				'EVT_ID' => $event->ID(),
@@ -57,7 +58,8 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 	public function test_handle_request_get_one__event_include_non_model_field() {
 		$this->set_current_user_to_new();
 		$event = $this->new_model_obj_with_dependencies( 'Event' );
-		$result = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'events/' . $event->ID(), $event->ID(), 'EVT_desc_raw, EVT_desc' );
+		$response = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'events/' . $event->ID(), $event->ID(), 'EVT_desc_raw, EVT_desc' );
+		$result = $response->get_data();
 		$this->assertEquals(
 			array (
 				'EVT_ID' => $event->ID(),
@@ -71,7 +73,8 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 	public function test_handle_request_get_one__event() {
 		$this->set_current_user_to_new();
 		$event = $this->new_model_obj_with_dependencies( 'Event' );
-		$result = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'events/' . $event->ID(), $event->ID() );
+		$response = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'events/' . $event->ID(), $event->ID() );
+		$result = $response->get_data();
 		$this->assertTrue( is_array( $result ) );
 		unset( $result[ 'EVT_created' ] );
 		unset( $result[ 'EVT_modified' ] );
@@ -110,7 +113,8 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 	public function test_handle_request_get_one__registration_include_attendee(){
 		$this->set_current_user_to_new();
 		$r = $this->new_model_obj_with_dependencies( 'Registration' );
-		$entity = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'registrations/' . $r->ID(), $r->ID(), 'Attendee.*');
+		$response = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'registrations/' . $r->ID(), $r->ID(), 'Attendee.*');
+		$entity = $response->get_data();
 		$this->assertArrayHasKey( 'attendee', $entity );
 	}
 
@@ -118,7 +122,8 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 		$this->set_current_user_to_new();
 		$r = $this->new_model_obj_with_dependencies( 'Registration' );
 		$a = $this->new_model_obj_with_dependencies( 'Answer', array( 'REG_ID' => $r->ID() ) );
-		$entity = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'registrations/' . $r->ID(), $r->ID(), 'Answer.Question.*');
+		$response = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'registrations/' . $r->ID(), $r->ID(), 'Answer.Question.*');
+		$entity = $response->get_data();
 		$this->assertArrayHasKey( 'answers', $entity );
 		$answers = $entity['answers'];
 		foreach( $answers as $answer ) {
@@ -130,7 +135,8 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 		$this->set_current_user_to_new();
 		$r = $this->new_model_obj_with_dependencies( 'Registration' );
 		$a = $this->new_model_obj_with_dependencies( 'Answer', array( 'REG_ID' => $r->ID() ) );
-		$entity = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'registrations/' . $r->ID(), $r->ID(), 'Answer.ATT_ID, Answer.Question.QST_ID');
+		$response = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'registrations/' . $r->ID(), $r->ID(), 'Answer.ATT_ID, Answer.Question.QST_ID');
+		$entity = $response->get_data();
 		$this->assertArrayHasKey( 'answers', $entity );
 		$answers = $entity['answers'];
 		foreach( $answers as $answer ){
@@ -161,7 +167,7 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 
 	public function test_handle_request_get_all_mine__not_logged_in(){
 		$r = $this->new_model_obj_with_dependencies('Registration');
-		$response = EE_Models_Rest_Read_Controller::handle_request_get_all_mine( EED_REST_API::ee_api_namespace . 'registrations/mine' . $r->ID() );
+		$response = EE_Models_Rest_Read_Controller::handle_request_get_all_mine( EED_REST_API::ee_api_namespace . 'registrations/mine' );
 		$this->assertInstanceOf( 'WP_Error', $response );
 		$this->assertEquals( 'json_registrations_cannot_list', $response->get_error_code() );
 	}
