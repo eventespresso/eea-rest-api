@@ -412,14 +412,30 @@ class EE_REST_API_Capabilities {
 
 	/**
 	 * Takes a entity that's ready to be returned
-	 * @param type $entity
+	 * @param array $entity
 	 * @param EEM_Base $model
 	 * @param string $request_type like one of EEM_Base::caps_*
 	 * @return array ready for converting into json
 	 */
-	public static function filter_out_inaccessible_entity_fields( $entity, $model, $request_type = EEM_Base::caps_read ) {
-		return $entity;
+	public static function filter_out_inaccessible_entity_fields( $entity,  $model, $request_type = EEM_Base::caps_read ) {
+		//we only care to do this for frontend reads and when the user can't edit the item
+		if(  $request_type !== EEM_Base::caps_read ||
+				$model->exists( array(
+					array( $model->primary_key_name() => $entity[ $model->primary_key_name() ] ),
+					'default_where_conditions' => 'none',
+					'caps' => EEM_Base::caps_edit ) ) ) {
+			return $entity;
+		}
+		foreach( $model->field_settings() as $field_name => $field_obj ){
+			if( $field_obj instanceof EE_Post_Content_Field && isset( $entity[ $field_name . '_raw' ] )) {
+				unset( $entity[ $field_name . '_raw' ] );
+			}
+		}
+		//theoretically we may want to filter out specific fields for specific models
+
+		return apply_filters( 'FHEE__EE_REST_API_Capabilities__filter_out_inaccessible_entity_fields', $entity, $model, $request_type );
 	}
+
 
 	/**
 	 * Resets the access restrictions

@@ -53,7 +53,7 @@ class EE_Models_Rest_Read_Controller {
 								EE_Registry::instance()->load_model( $model_name_singular ),
 								$filter,
 								$include,
-								$context ) );
+								self::validate_context( $context ) ) );
 			} else {
 				return new WP_Error( 'endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
 			}
@@ -86,7 +86,7 @@ class EE_Models_Rest_Read_Controller {
 								EE_Registry::instance()->load_model( $model_name_singular ),
 								$id,
 								$include,
-								$context ) );
+								self::validate_context( $context ) ) );
 			}else{
 				return new WP_Error( 'endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
 			}
@@ -123,7 +123,13 @@ class EE_Models_Rest_Read_Controller {
 					return new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $related_model_name_singular ) );
 				}
 
-				return self::send_response( self::get_entities_from_relation( $id, $main_model->related_settings_for( $related_model_name_singular ) , $filter, $include, $context ) );
+				return self::send_response(
+						self::get_entities_from_relation(
+								$id,
+								$main_model->related_settings_for( $related_model_name_singular ) ,
+								$filter,
+								$include,
+								self::validate_context( $context ) ) );
 			}
 		}catch( EE_Error $e ){
 			return new WP_Error( 'ee_exception', $e->getMessage() . ( defined('WP_DEBUG') && WP_DEBUG ? $e->getTraceAsString() : '' ) );
@@ -326,6 +332,22 @@ class EE_Models_Rest_Read_Controller {
 				//it's not you. It just doesn't exist
 				return new WP_Error( sprintf( 'json_%s_invalid_id', $lowercase_model_name ), sprintf( __( 'Invalid %s ID.', 'event_espresso' ), $lowercase_model_name ), array( 'status' => 404 ) );
 			}
+		}
+	}
+
+	/**
+	 * If a context is provided which isn't valid, maybe it was added in a future
+	 * version so just treat it as a default read
+	 * @param string $context
+	 * @param EEM_Base $model
+	 * @return string array key of EEM_Base::cap_contexts_to_cap_action_map()
+	 */
+	public static function validate_context( $context ) {
+		$valid_contexts = EEM_Base::valid_cap_contexts();
+		if( isset( $valid_contexts[ $context ]) ){
+			return $context;
+		}else{
+			return EEM_Base::caps_read;
 		}
 	}
 
