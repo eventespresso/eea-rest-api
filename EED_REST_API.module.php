@@ -119,11 +119,6 @@ class EED_REST_API extends EED_Module {
 					//@todo: also handle PUT, DELETE,
 			);
 			$model = EE_Registry::instance()->load_model( $model_classname );
-			if( $model->is_owned() ) {
-					$model_routes[ self::ee_api_namespace . Inflector::pluralize_and_lower( $model_name ) .'/mine' ] = array(
-					array( array( 'EE_Models_Rest_Read_Controller', 'handle_request_get_all_mine' ), WP_JSON_Server::READABLE ),
-				);
-			}
 			foreach ( $model->relation_settings() as $relation_name => $relation_obj ) {
 				$related_model_name_endpoint_part = EE_Models_Rest_Read_Controller::get_related_entity_name( $relation_name, $relation_obj );
 				$model_routes[ self::ee_api_namespace . Inflector::pluralize_and_lower( $model_name ) . '/(?P<id>\d+)/' . $related_model_name_endpoint_part ] = array(

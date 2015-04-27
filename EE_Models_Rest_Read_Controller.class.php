@@ -34,63 +34,26 @@ class EE_Models_Rest_Read_Controller {
 	 * "tickets":[{"TKT_ID":234,"TKT_name":"student rate","TKT_price":32.0},...]}]}', ie, events with all
 	 * their associated datetimes (including ones that are trashed) embedded in the json object, and each
 	 * datetime also has each associated ticket embedded in its json object.
+	 * @param string $context one of the consts from EEM_Base::caps_*, controls what capability restrictions to apply to this request
 	 * @return WP_JSON_Response|WP_Error
 	 */
-	public static function handle_request_get_all( $_path, $filter = array(), $include = '*' ) {
+	public static function handle_request_get_all( $_path, $filter = array(), $include = '*', $context = EEM_Base::caps_read ) {
 		try{
 			$inflector = new Inflector();
 			$regex = '~' . EED_REST_API::ee_api_namespace_for_regex . '(.*)~';
 			$success = preg_match( $regex, $_path, $matches );
 			if ( is_array( $matches ) && isset( $matches[ 1 ] ) ) {
 				$model_name_plural = $matches[ 1 ];
-				$model_name_singular = str_replace( ' ', '_', $inflector->humanize( $inflector->singularize( $model_name_plural ), 'all' ) );
+				$model_name_singular = EE_Inflector::singularize_and_upper( $model_name_plural );
 				if ( ! EE_Registry::instance()->is_model_name( $model_name_singular ) ) {
 					return new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) );
 				}
-				$model = EE_Registry::instance()->load_model( $model_name_singular );
-				if( EE_REST_API_Capabilities::current_user_has_partial_access_to( $model, WP_JSON_Server::READABLE ) ){
-					self::_set_debug_info( 'missing caps', EE_REST_API_Capabilities::get_missing_permissions_string( $model, WP_JSON_Server::READABLE ) );
-					return self::send_response( self::get_entities_from_model( $model, $filter, $include ) );
-				}else{
-					return new WP_Error( sprintf( 'json_%s_cannot_list', $model_name_plural ), sprintf( __( 'Sorry, you are not allowed to list %s. Missing permissions: %s' ), $model_name_plural, EE_REST_API_Capabilities::get_missing_permissions_string( $model, WP_JSON_Server::READABLE ) ), array( 'status' => 403 ) );
-				}
-			} else {
-				return new WP_Error( 'endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
-			}
-		}catch( EE_Error $e ){
-			return new WP_Error( 'ee_exception', $e->getMessage() . ( defined('WP_DEBUG') && WP_DEBUG ? $e->getTraceAsString() : '' ) );
-		}
-	}
-
-	/**
-	 * Handles requests to get all mine (or a filtered subset) of entities for a particular model
-	 * @param string $_path
-	 * @param array $filter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
-	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
-	 * @return WP_JSON_Response|WP_Error
-	 */
-	public static function handle_request_get_all_mine( $_path, $filter = array(), $include = '*' ) {
-		try{
-			$inflector = new Inflector();
-			$regex = '~' . EED_REST_API::ee_api_namespace_for_regex . '(.*)/mine~';
-			$success = preg_match( $regex, $_path, $matches );
-			if ( is_array( $matches ) && isset( $matches[ 1 ] ) ) {
-				$model_name_plural = $matches[ 1 ];
-				$model_name_singular = str_replace( ' ', '_', $inflector->humanize( $inflector->singularize( $model_name_plural ), 'all' ) );
-				if ( ! EE_Registry::instance()->is_model_name( $model_name_singular ) ) {
-					return new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) );
-				}
-				$model = EE_Registry::instance()->load_model( $model_name_singular );
-				if( ! $model->is_owned() ) {
-					return new WP_Error( 'endpoint_not_supported', sprintf( __( 'This endpoint is misconfigured, please contact Event Espresso Support', 'event_espresso' ) ) );
-				}
-				if( EE_REST_API_Capabilities::current_user_has_partial_access_to( $model, WP_JSON_Server::READABLE ) ){
-					$filter['mine'] = 1;
-					self::_set_debug_info( 'missing caps', EE_REST_API_Capabilities::get_missing_permissions_string( $model, WP_JSON_Server::READABLE ) );
-					return self::send_response( self::get_entities_from_model( $model, $filter, $include ) );
-				}else{
-					return new WP_Error( sprintf( 'json_%s_cannot_list', $model_name_plural ), sprintf( __( 'Sorry, you are not allowed to list %s. Missing permissions: %s' ), $model_name_plural, EE_REST_API_Capabilities::get_missing_permissions_string( $model, WP_JSON_Server::READABLE ) ), array( 'status' => 403 ) );
-				}
+				return self::send_response(
+						self::get_entities_from_model(
+								EE_Registry::instance()->load_model( $model_name_singular ),
+								$filter,
+								$include,
+								$context ) );
 			} else {
 				return new WP_Error( 'endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
 			}
@@ -104,22 +67,26 @@ class EE_Models_Rest_Read_Controller {
 	 * @param string $_path
 	 * @param string $id ID of the thing to be retrieved
 	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
+	 * @param string $context one of the consts from EEM_Base::caps_*
 	 * @return WP_JSON_Response|WP_Error
 	 */
-	public static function handle_request_get_one( $_path, $id, $include = '*' ) {
+	public static function handle_request_get_one( $_path, $id, $include = '*', $context = EEM_Base::caps_read ) {
 		try{
 			$inflector = new Inflector();
 			$regex = '~' . EED_REST_API::ee_api_namespace_for_regex . '(.*)/(.*)~';
 			$success = preg_match( $regex, $_path, $matches );
 			if ( $success && is_array( $matches ) && isset( $matches[ 1 ] ) ) {
 				$model_name_plural = $matches[ 1 ];
-				$model_name_singular = str_replace( ' ', '_', $inflector->humanize( $inflector->singularize( $model_name_plural ), 'all' ) );
+				$model_name_singular = EE_Inflector::singularize_and_upper( $model_name_plural );
 				if ( ! EE_Registry::instance()->is_model_name( $model_name_singular ) ) {
 					return new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) );
 				}
-				$model = EE_Registry::instance()->load_model( $model_name_singular );
-				self::_set_debug_info( 'missing caps', EE_REST_API_Capabilities::get_missing_permissions_string( $model, WP_JSON_Server::READABLE ) );
-				return self::send_response( self::get_entity_from_model( $model, $id, $include ) );
+				return self::send_response(
+						self::get_entity_from_model(
+								EE_Registry::instance()->load_model( $model_name_singular ),
+								$id,
+								$include,
+								$context ) );
 			}else{
 				return new WP_Error( 'endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
 			}
@@ -136,41 +103,27 @@ class EE_Models_Rest_Read_Controller {
 	 * @param string $id
 	 * @param array $filter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
 	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
+	 * @param string $context one of the consts from EEM_Base::caps_*
 	 * @return WP_JSON_Response|WP_Error
 	 */
-	public static function handle_request_get_related( $_path, $id, $filter = array(), $include = '*' ) {
+	public static function handle_request_get_related( $_path, $id, $filter = array(), $include = '*', $context = EEM_Base::caps_read ) {
 		try{
 			$regex = '~' . EED_REST_API::ee_api_namespace_for_regex . '(.*)/(.*)/(.*)~';
 			$success = preg_match( $regex, $_path, $matches );
 			if ( is_array( $matches ) && isset( $matches[ 1 ] ) && isset( $matches[3] ) ) {
 				$main_model_name_plural = $matches[ 1 ];
-				$main_model_name_singular = str_replace( ' ', '_', Inflector::humanize( Inflector::singularize( $main_model_name_plural ), 'all' ) );
+				$main_model_name_singular = EE_Inflector::singularize_and_upper( $main_model_name_plural );
 				if ( ! EE_Registry::instance()->is_model_name( $main_model_name_singular ) ) {
 					return new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $main_model_name_singular ) );
 				}
+				$main_model = EE_Registry::instance()->load_model( $main_model_name_singular );
 				$related_model_name_maybe_plural = $matches[ 3 ];
-				$related_model_name_singular = str_replace( ' ', '_', Inflector::humanize( Inflector::singularize( $related_model_name_maybe_plural ), 'all' ) );
+				$related_model_name_singular = EE_Inflector::singularize_and_upper( $related_model_name_maybe_plural );
 				if ( ! EE_Registry::instance()->is_model_name( $related_model_name_singular ) ) {
 					return new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $related_model_name_singular ) );
 				}
 
-				$model = EE_Registry::instance()->load_model( $main_model_name_singular );
-				$relation_settings = $model->related_settings_for( $related_model_name_singular );
-
-				//check if they can access the 1st model object
-				$query_params = array( array( $model->primary_key_name() => $id ),'limit' => 1 );
-				if( $model instanceof EEM_Soft_Delete_Base ){
-					$query_params = $model->alter_query_params_so_deleted_and_undeleted_items_included($query_params);
-				}
-				$restricted_query_params = EE_REST_API_Capabilities::add_restrictions_onto_query( $query_params, $model, WP_JSON_Server::READABLE );
-				self::_set_debug_info( 'main model query params', $restricted_query_params );
-				if( EE_REST_API_Capabilities::current_user_has_partial_access_to( $relation_settings->get_other_model(), WP_JSON_Server::READABLE ) &&
-				$model->exists( $restricted_query_params ) ){
-					self::_set_debug_info( 'missing caps', EE_REST_API_Capabilities::get_missing_permissions_string( $relation_settings->get_other_model(), WP_JSON_Server::READABLE ) );
-					return self::send_response( self::get_entities_from_relation( $id, $relation_settings, $filter, $include ) );
-				}else{
-					return new WP_Error( sprintf( 'json_%s_cannot_list', $related_model_name_maybe_plural ), sprintf( __( 'Sorry, you are not allowed to list %s related to %s. Missing permissions: %s' ), $related_model_name_maybe_plural, $main_model_name_plural, implode(',', array_merge( EE_REST_API_Capabilities::get_missing_permissions( $relation_settings->get_other_model(), WP_JSON_Server::READABLE ) , EE_REST_API_Capabilities::get_missing_permissions( $relation_settings->get_this_model(), WP_JSON_Server::READABLE ) ) )  ), array( 'status' => 403 ) );
-				}
+				return self::send_response( self::get_entities_from_relation( $id, $main_model->related_settings_for( $related_model_name_singular ) , $filter, $include, $context ) );
 			}
 		}catch( EE_Error $e ){
 			return new WP_Error( 'ee_exception', $e->getMessage() . ( defined('WP_DEBUG') && WP_DEBUG ? $e->getTraceAsString() : '' ) );
@@ -184,15 +137,20 @@ class EE_Models_Rest_Read_Controller {
 	 * @param EEM_Base $model
 	 * @param array $filter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
 	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
+	 * @param string $context one of the consts from EEM_Base::caps_*
 	 * @return array
 	 */
-	public static function get_entities_from_model( $model, $filter, $include ) {
-		$query_params = self::create_model_query_params( $model, $filter );
+	public static function get_entities_from_model( $model, $filter, $include, $context ) {
+		if( ! EE_REST_API_Capabilities::current_user_has_partial_access_to( $model, $context ) ) {
+			$model_name_plural = EE_Inflector::pluralize_and_lower( $model->get_this_model_name() );
+			return new WP_Error( sprintf( 'json_%s_cannot_list', $model_name_plural), sprintf( __( 'Sorry, you are not allowed to list %s. Missing permissions: %s' ), $model_name_plural, EE_REST_API_Capabilities::get_missing_permissions_string( $model, $context ) ), array( 'status' => 403 ) );
+		}
+		$query_params = self::create_model_query_params( $model, $filter, $context );
 		self::_set_debug_info( 'model query params', $query_params );
 		$results = $model->get_all_wpdb_results( $query_params );
 		$nice_results = array( );
 		foreach ( $results as $result ) {
-			$nice_results[ ] = self::create_entity_from_wpdb_result( $model, $result, $include );
+			$nice_results[ ] = self::create_entity_from_wpdb_result( $model, $result, $include, $context );
 		}
 		return $nice_results;
 	}
@@ -207,21 +165,43 @@ class EE_Models_Rest_Read_Controller {
 	 * @param EE_Model_Relation_Base $relation
 	 * @param array $filter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
 	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
+	 * @param string $context one of the cosnts from EEM_Base::caps_*
 	 * @return array
 	 */
-	public static function get_entities_from_relation( $id,  $relation, $filter, $include ) {
-		$query_params = self::create_model_query_params( $relation->get_other_model(), $filter );
+	public static function get_entities_from_relation( $id,  $relation, $filter, $include, $context ) {
+		$model = $relation->get_this_model();
+		$related_model = $relation->get_other_model();
+		//check if they can access the 1st model object
+		$query_params = array( array( $model->primary_key_name() => $id ),'limit' => 1 );
+		if( $model instanceof EEM_Soft_Delete_Base ){
+			$query_params = $model->alter_query_params_so_deleted_and_undeleted_items_included($query_params);
+		}
+		$restricted_query_params = $query_params;
+		$restricted_query_params[ 'caps' ] = $context;
+		self::_set_debug_info( 'main model query params', $restricted_query_params );
+		self::_set_debug_info( 'missing caps', EE_REST_API_Capabilities::get_missing_permissions_string( $related_model, $context ) );
+
+		if( ! ( EE_REST_API_Capabilities::current_user_has_partial_access_to( $related_model, $context ) &&
+				$model->exists( $restricted_query_params ) ) ){
+			if( $relation instanceof EE_Belongs_To_Relation ) {
+				$related_model_name_maybe_plural = strtolower( $related_model->get_this_model_name() );
+			}else{
+				$related_model_name_maybe_plural = EE_Inflector::pluralize_and_lower( $related_model->get_this_model_name() );
+			}
+			return new WP_Error( sprintf( 'json_%s_cannot_list', $related_model_name_maybe_plural ), sprintf( __( 'Sorry, you are not allowed to list %s related to %s. Missing permissions: %s' ), $related_model_name_maybe_plural, $main_model_name_plural, implode(',', array_merge( EE_REST_API_Capabilities::get_missing_permissions( $related_model, $context ) , EE_REST_API_Capabilities::get_missing_permissions( $model, $context ) ) )  ), array( 'status' => 403 ) );
+		}
+		$query_params = self::create_model_query_params( $relation->get_other_model(), $filter, $context );
 		self::_set_debug_info( 'model query params', $query_params );
 		$query_params[0][ $relation->get_this_model()->get_this_model_name() . '.' . $relation->get_this_model()->primary_key_name() ] = $id;
 		$query_params[ 'default_where_conditions' ] = 'none';
 		$results = $relation->get_other_model()->get_all_wpdb_results( $query_params );
 		$nice_results = array();
 		foreach( $results as $result ) {
-			$nice_result = self::create_entity_from_wpdb_result( $relation->get_other_model(), $result, $include );
+			$nice_result = self::create_entity_from_wpdb_result( $relation->get_other_model(), $result, $include, $context );
 			if( $relation instanceof EE_HABTM_Relation ) {
 				//put the unusual stuff (properties from the HABTM relation) first, and make sure
 				//if there are conflicts we prefer the properties from the main model
-				$join_model_result = self::create_entity_from_wpdb_result( $relation->get_join_model(), $result, $include );
+				$join_model_result = self::create_entity_from_wpdb_result( $relation->get_join_model(), $result, $include, $context );
 				$joined_result = array_merge( $nice_result, $join_model_result );
 				//but keep the meta stuff from the main model
 				if( isset( $nice_result['meta'] ) ){
@@ -243,8 +223,10 @@ class EE_Models_Rest_Read_Controller {
 	 * @param EEM_Base $model
 	 * @param array $db_row like results from $wpdb->get_results()
 	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
+	 * @param string $context one of EEM_Base::caps_*, describing what capabilities apply to this operation
+	 * @return array ready for being converted into json for sending to client
 	 */
-	public static function create_entity_from_wpdb_result( $model, $db_row, $include ) {
+	public static function create_entity_from_wpdb_result( $model, $db_row, $include, $context ) {
 		$result = $model->deduce_fields_n_values_from_cols_n_values( $db_row );
 		foreach( $result as $field_name => $raw_field_value ) {
 			$field_obj = $model->field_settings_for($field_name);
@@ -287,13 +269,13 @@ class EE_Models_Rest_Read_Controller {
 			}
 			$related_fields_to_include = self::extract_includes_for_this_model( $include, $relation_name );
 			if( $related_fields_to_include ) {
-				$result[ $related_model_part ] = self::get_entities_from_relation( $result[ $model->primary_key_name() ], $relation_obj, array(), implode(',',self::extract_includes_for_this_model( $include, $relation_name ) ) );
+				$result[ $related_model_part ] = self::get_entities_from_relation( $result[ $model->primary_key_name() ], $relation_obj, array(), implode(',',self::extract_includes_for_this_model( $include, $relation_name ) ), $context  );
 			}
 		}
-		$result = apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_entity_from_wpdb_results__entity_before_innaccessible_field_removal', $result, $model );
-		$result_without_inaccessible_fields = EE_REST_API_Capabilities::filter_out_inaccessible_entity_fields( $result, $model, WP_JSON_Server::READABLE );
+		$result = apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_entity_from_wpdb_results__entity_before_innaccessible_field_removal', $result, $model, $context );
+		$result_without_inaccessible_fields = EE_REST_API_Capabilities::filter_out_inaccessible_entity_fields( $result, $model, $context );
 		self::_set_debug_info( 'inaccessible fields', array_keys( array_diff_key( $result, $result_without_inaccessible_fields ) ) );
-		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_entity_from_wpdb_results__entity_return', $result_without_inaccessible_fields, $model );
+		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_entity_from_wpdb_results__entity_return', $result_without_inaccessible_fields, $model, $context );
 	}
 
 	/**
@@ -319,18 +301,20 @@ class EE_Models_Rest_Read_Controller {
 	 * @param EEM_Base $model
 	 * @param string $id ID of the entity we want to retrieve
 	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
+	 * @param string string one of EEM_Base::caps_* consts
 	 * @return array
 	 */
-	public static function get_entity_from_model( $model, $id, $include ) {
-		$query_params = array( array( $model->primary_key_name() => $id ),'limit' => 1 );
+	public static function get_entity_from_model( $model, $id, $include, $context ) {
+		$query_params = array( array( $model->primary_key_name() => $id ),'limit' => 1);
 		if( $model instanceof EEM_Soft_Delete_Base ){
 			$query_params = $model->alter_query_params_so_deleted_and_undeleted_items_included($query_params);
 		}
-		$restricted_query_params = EE_REST_API_Capabilities::add_restrictions_onto_query( $query_params, $model, WP_JSON_Server::READABLE );
+		$restricted_query_params = $query_params;
+		$restricted_query_params[ 'caps' ] =  $context;
 		self::_set_debug_info( 'model query params', $restricted_query_params );
 		$model_rows = $model->get_all_wpdb_results( $restricted_query_params );
 		if ( ! empty ( $model_rows ) ) {
-			return self::create_entity_from_wpdb_result( $model, array_shift( $model_rows ), $include );
+			return self::create_entity_from_wpdb_result( $model, array_shift( $model_rows ), $include, $context );
 		} else {
 			//ok let's test to see if we WOULD have found it, had we not had restrictions from missing capabilities
 			$lowercase_model_name = strtolower( $model->get_this_model_name() );
@@ -351,10 +335,11 @@ class EE_Models_Rest_Read_Controller {
 	 * Translates API filter get parameter into $query_params array used by EEM_Base::get_all()
 	 * @param EEM_Base $model
 	 * @param array $filter from $_GET['filter'] parameter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
+	 * @param string $context one of the consts from EEM_Base::caps_*
 	 * @return array like what EEM_Base::get_all() expects or FALSE to indicate
 	 * that absolutely no results should be returned
 	 */
-	public static function create_model_query_params( $model, $filter ) {
+	public static function create_model_query_params( $model, $filter, $context ) {
 		$model_query_params = array( );
 		if ( isset( $filter[ 'where' ] ) ) {
 			//@todo: no good for permissions
@@ -383,8 +368,8 @@ class EE_Models_Rest_Read_Controller {
 		}else{
 			$model_query_params[ 'limit' ] = 50;
 		}
-		$model_query_params = EE_REST_API_Capabilities::add_restrictions_onto_query( $model_query_params, $model, WP_JSON_Server::READABLE );
-		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_model_query_params', $model_query_params, $filter, $model );
+		$model_query_params[ 'caps' ] = $context;
+		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_model_query_params', $model_query_params, $filter, $model, $context );
 	}
 
 	/**
@@ -456,6 +441,19 @@ class EE_Models_Rest_Read_Controller {
 	 */
 	protected static function _set_debug_info( $key, $info ){
 		self::$_debug_info[ $key ] = $info;
+	}
+
+	/**
+	 * Figures out which model capability context to use for this request
+	 * @param array $filter
+	 * @return string like one of EEM_Base::caps_* consts
+	 */
+	public static function extract_model_context( $filter ) {
+		if( isset( $filter['context'] ) ) {
+			return $filter[ 'context' ];
+		}else{
+			return EEM_Base::caps_read;
+		}
 	}
 }
 
