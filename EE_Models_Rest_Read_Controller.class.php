@@ -34,7 +34,7 @@ class EE_Models_Rest_Read_Controller {
 	 * "tickets":[{"TKT_ID":234,"TKT_name":"student rate","TKT_price":32.0},...]}]}', ie, events with all
 	 * their associated datetimes (including ones that are trashed) embedded in the json object, and each
 	 * datetime also has each associated ticket embedded in its json object.
-	 * @param string $context one of the consts from EEM_Base::caps_*, controls what capability restrictions to apply to this request
+	 * @param string $context one of return values from EEM_Base::valid_cap_contexts(), controls what capability restrictions to apply to this request
 	 * @return WP_JSON_Response|WP_Error
 	 */
 	public static function handle_request_get_all( $_path, $filter = array(), $include = '*', $context = EEM_Base::caps_read ) {
@@ -67,7 +67,7 @@ class EE_Models_Rest_Read_Controller {
 	 * @param string $_path
 	 * @param string $id ID of the thing to be retrieved
 	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
-	 * @param string $context one of the consts from EEM_Base::caps_*
+	 * @param string $context one of return values from EEM_Base::valid_cap_contexts()
 	 * @return WP_JSON_Response|WP_Error
 	 */
 	public static function handle_request_get_one( $_path, $id, $include = '*', $context = EEM_Base::caps_read ) {
@@ -103,7 +103,7 @@ class EE_Models_Rest_Read_Controller {
 	 * @param string $id
 	 * @param array $filter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
 	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
-	 * @param string $context one of the consts from EEM_Base::caps_*
+	 * @param string $context one of return values from EEM_Base::valid_cap_contexts()
 	 * @return WP_JSON_Response|WP_Error
 	 */
 	public static function handle_request_get_related( $_path, $id, $filter = array(), $include = '*', $context = EEM_Base::caps_read ) {
@@ -143,7 +143,7 @@ class EE_Models_Rest_Read_Controller {
 	 * @param EEM_Base $model
 	 * @param array $filter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
 	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
-	 * @param string $context one of the consts from EEM_Base::caps_*
+	 * @param string $context one of return values from EEM_Base::valid_cap_contexts()
 	 * @return array
 	 */
 	public static function get_entities_from_model( $model, $filter, $include, $context ) {
@@ -171,7 +171,7 @@ class EE_Models_Rest_Read_Controller {
 	 * @param EE_Model_Relation_Base $relation
 	 * @param array $filter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
 	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
-	 * @param string $context one of the cosnts from EEM_Base::caps_*
+	 * @param string $context one of the return values from EEM_Base::valid_cap_contexts()
 	 * @return array
 	 */
 	public static function get_entities_from_relation( $id,  $relation, $filter, $include, $context ) {
@@ -229,7 +229,7 @@ class EE_Models_Rest_Read_Controller {
 	 * @param EEM_Base $model
 	 * @param array $db_row like results from $wpdb->get_results()
 	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
-	 * @param string $context one of EEM_Base::caps_*, describing what capabilities apply to this operation
+	 * @param string $context one of the return values from EEM_Base::valid_cap_contexts()
 	 * @return array ready for being converted into json for sending to client
 	 */
 	public static function create_entity_from_wpdb_result( $model, $db_row, $include, $context ) {
@@ -307,7 +307,7 @@ class EE_Models_Rest_Read_Controller {
 	 * @param EEM_Base $model
 	 * @param string $id ID of the entity we want to retrieve
 	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
-	 * @param string string one of EEM_Base::caps_* consts
+	 * @param string string one of the return values from EEM_Base::valid_cap_contexts()
 	 * @return array
 	 */
 	public static function get_entity_from_model( $model, $id, $include, $context ) {
@@ -357,7 +357,7 @@ class EE_Models_Rest_Read_Controller {
 	 * Translates API filter get parameter into $query_params array used by EEM_Base::get_all()
 	 * @param EEM_Base $model
 	 * @param array $filter from $_GET['filter'] parameter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
-	 * @param string $context one of the consts from EEM_Base::caps_*
+	 * @param string $context one of return values from EEM_Base::valid_cap_contexts()
 	 * @return array like what EEM_Base::get_all() expects or FALSE to indicate
 	 * that absolutely no results should be returned
 	 */
@@ -468,7 +468,7 @@ class EE_Models_Rest_Read_Controller {
 	/**
 	 * Figures out which model capability context to use for this request
 	 * @param array $filter
-	 * @return string like one of EEM_Base::caps_* consts
+	 * @return string one of the return values from EEM_Base::valid_cap_contexts()
 	 */
 	public static function extract_model_context( $filter ) {
 		if( isset( $filter['context'] ) ) {

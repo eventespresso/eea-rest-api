@@ -339,7 +339,7 @@ class EE_REST_API_Capabilities {
 	/**
 	 * The current user can see at least SOME of these entities.
 	 * @param EEM_Base $model
-	 * @param string $model_context one of EEM_Base::caps_* consts
+	 * @param string $model_context one of the return values from EEM_Base::valid_cap_contexts()
 	 * @return boolean
 	 */
 	public static function current_user_has_partial_access_to( $model, $model_context = EEM_Base::caps_read ) {
@@ -370,7 +370,7 @@ class EE_REST_API_Capabilities {
 	 * Gets a string of all the capabilities the current user is missing that affected
 	 * the query
 	 * @param EEM_Base $model
-	 * @param int $model_context one of the consts on EEM_Base::caps_*
+	 * @param int $model_context one of the return values from EEM_Base::valid_cap_contexts()
 	 * @return string
 	 */
 	public static function get_missing_permissions_string( $model, $model_context = EEM_Base::caps_read ) {
@@ -414,7 +414,7 @@ class EE_REST_API_Capabilities {
 	 * Takes a entity that's ready to be returned
 	 * @param array $entity
 	 * @param EEM_Base $model
-	 * @param string $request_type like one of EEM_Base::caps_*
+	 * @param string $request_type one of the return values from EEM_Base::valid_cap_contexts()
 	 * @return array ready for converting into json
 	 */
 	public static function filter_out_inaccessible_entity_fields( $entity,  $model, $request_type = EEM_Base::caps_read ) {
