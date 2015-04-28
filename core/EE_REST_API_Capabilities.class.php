@@ -411,7 +411,7 @@ class EE_REST_API_Capabilities {
 	}
 
 	/**
-	 * Takes a entity that's ready to be returned
+	 * Takes a entity that's ready to be returned and removes fields which the user shouldn't be able to access.
 	 * @param array $entity
 	 * @param EEM_Base $model
 	 * @param string $request_type one of the return values from EEM_Base::valid_cap_contexts()

@@ -194,7 +194,7 @@ class EE_Models_Rest_Read_Controller {
 			}else{
 				$related_model_name_maybe_plural = EE_Inflector::pluralize_and_lower( $related_model->get_this_model_name() );
 			}
-			return new WP_Error( sprintf( 'json_%s_cannot_list', $related_model_name_maybe_plural ), sprintf( __( 'Sorry, you are not allowed to list %s related to %s. Missing permissions: %s' ), $related_model_name_maybe_plural, $main_model_name_plural, implode(',', array_merge( EE_REST_API_Capabilities::get_missing_permissions( $related_model, $context ) , EE_REST_API_Capabilities::get_missing_permissions( $model, $context ) ) )  ), array( 'status' => 403 ) );
+			return new WP_Error( sprintf( 'json_%s_cannot_list', $related_model_name_maybe_plural ), sprintf( __( 'Sorry, you are not allowed to list %s related to %s. Missing permissions: %s' ), $related_model_name_maybe_plural, $related_model->get_this_model_name(), implode(',', array_keys( EE_REST_API_Capabilities::get_missing_permissions( $related_model, $context ) ) )  ), array( 'status' => 403 ) );
 		}
 		$query_params = self::create_model_query_params( $relation->get_other_model(), $filter, $context );
 		self::_set_debug_info( 'model query params', $query_params );
@@ -275,7 +275,8 @@ class EE_Models_Rest_Read_Controller {
 			}
 			$related_fields_to_include = self::extract_includes_for_this_model( $include, $relation_name );
 			if( $related_fields_to_include ) {
-				$result[ $related_model_part ] = self::get_entities_from_relation( $result[ $model->primary_key_name() ], $relation_obj, array(), implode(',',self::extract_includes_for_this_model( $include, $relation_name ) ), $context  );
+				 $related_results = self::get_entities_from_relation( $result[ $model->primary_key_name() ], $relation_obj, array(), implode(',',self::extract_includes_for_this_model( $include, $relation_name ) ), $context  );
+				 $result[ $related_model_part ] = $related_results instanceof WP_Error ? null : $related_results;
 			}
 		}
 		$result = apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_entity_from_wpdb_results__entity_before_innaccessible_field_removal', $result, $model, $context );
