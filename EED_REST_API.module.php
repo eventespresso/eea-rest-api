@@ -104,7 +104,7 @@ class EED_REST_API extends EED_Module {
 	 * @return array
 	 */
 	protected function _register_model_routes() {
-		$models_to_register = EE_Registry::instance()->non_abstract_db_models;
+		$models_to_register = apply_filters( 'FHEE__EED_REST_API___register_model_routes', EE_Registry::instance()->non_abstract_db_models );
 		//let's not bother having endpoints for extra metas
 		unset($models_to_register['Extra_Meta']);
 		$model_routes = array( );
