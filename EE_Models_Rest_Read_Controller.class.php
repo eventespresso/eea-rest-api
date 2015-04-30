@@ -268,7 +268,7 @@ class EE_Models_Rest_Read_Controller {
 			$result = array_intersect_key( $result, array_flip( $includes_for_this_model ) );
 		}
 		//add meta links and possibly include related models
-		foreach( $model->relation_settings() as $relation_name => $relation_obj ) {
+		foreach( apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_entity_from_wpdb_result__related_models_to_include', $model->relation_settings() ) as $relation_name => $relation_obj ) {
 			$related_model_part = self::get_related_entity_name( $relation_name, $relation_obj );
 			if( empty( $includes_for_this_model ) || isset( $includes_for_this_model['meta'] ) ) {
 				$result['meta']['links'][$related_model_part] = json_url( EED_REST_API::ee_api_namespace . Inflector::pluralize_and_lower( $model->get_this_model_name() ) . '/' . $result[ $model->primary_key_name() ] . '/' . $related_model_part );
