@@ -13,13 +13,13 @@
  *
  * ------------------------------------------------------------------------
  *
- * REST_API_Admin_Page
+ * REest_Api_Admin_Page
  *
  * This contains the logic for setting up the REST_API Addon Admin related pages.  Any methods without PHP doc comments have inline docs with parent class.
  *
  *
- * @package			REST_API_Admin_Page (rest_api addon)
- * @subpackage 	admin/REST_API_Admin_Page.core.php
+ * @package			REest_Api_Admin_Page (rest_api addon)
+ * @subpackage 	admin/REest_Api_Admin_Page.core.php
  * @author				Mike Nelson
  *
  * ------------------------------------------------------------------------
@@ -227,5 +227,5 @@ class Rest_Api_Admin_Page extends EE_Admin_Page {
 
 
 }
-// End of file REST_API_Admin_Page.core.php
-// Location: /wp-content/plugins/eea-rest-api/admin/rest_api/REST_API_Admin_Page.core.php
+// End of file REest_Api_Admin_Page.core.php
+// Location: /wp-content/plugins/eea-rest-api/admin/rest_api/REest_Api_Admin_Page.core.php
