@@ -44,7 +44,4 @@ dependencies:
 ##tests override. Note you'll want to make sure that the addon is tested against all ee core main branches.
 test:
   override:
-    - cd $event_espresso_core_dir; git checkout development; cd $plugin_tests_dir; phpunit -d display_errors=On
-    - cd $event_espresso_core_dir; git checkout alpha; cd $plugin_tests_dir; phpunit -d display_errors=On
-    - cd $event_espresso-core_dir; git checkout beta; cd $plugin_tests_dir; phpunit -d display_errors=On
-    - cd $event_espresso_core_dir; git checkout master; cd $plugin_tests_dir; phpunit -d display_errors=On
+    - cd $plugin_tests_dir; phpunit
