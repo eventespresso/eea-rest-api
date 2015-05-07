@@ -49,7 +49,6 @@ Class  EE_REST_API extends EE_Addon {
 				),
 
 				'module_paths' 		=> array( EE_REST_API_PATH . 'EED_REST_API.module.php' ),
-				'widget_paths' 		=> array( EE_REST_API_PATH . 'EEW_REST_API.widget.php' ),
 				// if plugin update engine is being used for auto-updates. not needed if PUE is not being used.
 				'pue_options'			=> array(
 					'pue_plugin_slug' => 'eea-rest-api',
