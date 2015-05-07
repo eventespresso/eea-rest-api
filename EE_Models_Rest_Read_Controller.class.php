@@ -225,12 +225,20 @@ class EE_Models_Rest_Read_Controller {
 	}
 
 	/**
+	 * Returns the list of model field classes that that the API basically ignores
+	 * @return array
+	 */
+	public static function fields_ignored(){
+		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller_fields_ignored', array( 'EE_Foreign_Key_Field_Base', 'EE_Any_Foreign_Model_Name_Field' ) );
+	}
+
+	/**
 	 * Returns the list of model field classes that have a "_raw" and non-raw versions.
 	 * Normally the "_raw" versions are only accessible to those who can edit them.
 	 * @return array an array of EE_Model_Field_Base child classnames
 	 */
-	public static function raw_fields() {
-		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__raw_and_pretty_fields', array ('EE_Post_Content_Field' ) );
+	public static function fields_raw() {
+		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__fields_raw', array ('EE_Post_Content_Field' ) );
 	}
 
 	/**
@@ -239,8 +247,8 @@ class EE_Models_Rest_Read_Controller {
 	 * to view
 	 * @return array an array of EE_Model_Field_Base child classnames
 	 */
-	public static function pretty_fields() {
-		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__raw_and_pretty_fields', array ( 'EE_Enum_Integer_Field', 'EE_Enum_Text_Field', 'EE_Money_Field' ) );
+	public static function fields_pretty() {
+		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__fields_pretty', array ( 'EE_Enum_Integer_Field', 'EE_Enum_Text_Field', 'EE_Money_Field' ) );
 	}
 
 	/**
@@ -273,12 +281,12 @@ class EE_Models_Rest_Read_Controller {
 		foreach( $result as $field_name => $raw_field_value ) {
 			$field_obj = $model->field_settings_for($field_name);
 			$field_value = $field_obj->prepare_for_set_from_db( $raw_field_value );
-			if( $field_obj instanceof EE_Foreign_Key_Field_Base || $field_obj instanceof EE_Any_Foreign_Model_Name_Field ) {
+			if( EE_Models_Rest_Read_Controller::is_subclass_of_one(  $field_obj, EE_Models_Rest_Read_Controller::fields_ignored() ) ){
 				unset( $result[ $field_name ] );
-			}elseif( EE_Models_Rest_Read_Controller::is_subclass_of_one(  $field_obj, EE_Models_Rest_Read_Controller::raw_fields() ) ){
+			}elseif( EE_Models_Rest_Read_Controller::is_subclass_of_one(  $field_obj, EE_Models_Rest_Read_Controller::fields_raw() ) ){
 				$result[ $field_name . '_raw' ] = $field_obj->prepare_for_get( $field_value );
 				$result[ $field_name ] = $field_obj->prepare_for_pretty_echoing( $field_value );
-			}elseif( EE_Models_Rest_Read_Controller::is_subclass_of_one( $field_obj, EE_Models_Rest_Read_Controller::pretty_fields() ) ){
+			}elseif( EE_Models_Rest_Read_Controller::is_subclass_of_one( $field_obj, EE_Models_Rest_Read_Controller::fields_pretty() ) ){
 				$result[ $field_name ] = $field_obj->prepare_for_get( $field_value );
 				$result[ $field_name . '_pretty' ] = $field_obj->prepare_for_pretty_echoing( $field_value );
 			}elseif( $field_obj instanceof EE_Datetime_Field ){
@@ -574,6 +582,43 @@ class EE_Models_Rest_Read_Controller {
 		}else{
 			return EEM_Base::caps_read;
 		}
+	}
+
+
+	public static function handle_request_models_meta() {
+		$response = array();
+		foreach( EE_Registry::instance()->non_abstract_db_models as $model_name => $model_classname ){
+			$model = EE_Registry::instance()->load_model( $model_name );
+			$response[ $model_name ]['fields'] = array();
+			foreach( $model->field_settings() as $field_name => $field_obj ) {
+				if( $field_obj instanceof EE_Boolean_Field ) {
+					$datatype = 'Boolean';
+				}elseif( $field_obj->get_wpdb_data_type() == '%d' ) {
+					$datatype = 'Number';
+				}elseif( $field_name instanceof EE_Serialized_Text_Field ) {
+					$datatype = 'Object';
+				}else{
+					$datatype = 'String';
+				}
+				$field_json = array(
+					'name' => $field_name,
+					'nicename' => $field_obj->get_nicename(),
+					'queryable' => true,
+					'editable' => true,
+					'datatype' => $datatype,
+					'nullable' => $field_obj->is_nullable(),
+					'default' => $field_obj->get_default_value() === INF ? EE_INF_IN_DB : $field_obj->get_default_value(),
+					'table_alias' => $field_obj->get_table_alias(),
+					'table_column' => $field_obj->get_table_column(),
+
+
+				);
+				$response[ $model_name ]['fields'][ $field_name ] = $field_json;
+			}
+
+		}
+		return $response;
+
 	}
 }
 

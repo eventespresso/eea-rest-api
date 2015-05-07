@@ -28,8 +28,8 @@ if ( !defined( 'EVENT_ESPRESSO_VERSION' ) ) {
  */
 class EED_REST_API extends EED_Module {
 
-	const ee_api_namespace = '/ee4/v2/';
-	const ee_api_namespace_for_regex = '\/ee4\/v2\/';
+	const ee_api_namespace = '/ee/v4.6/';
+	const ee_api_namespace_for_regex = '\/ee\/v4.6\/';
 	const saved_routes_option_names = 'ee_routes';
 
 	/**
@@ -94,7 +94,7 @@ class EED_REST_API extends EED_Module {
 	public static function save_ee_routes() {
 		if( EE_Maintenance_Mode::instance()->models_can_query() ){
 			$instance = self::instance();
-			$routes = array_merge( $instance->_register_config_routes(), $instance->_register_model_routes() );
+			$routes = array_merge( $instance->_register_config_routes(), $instance->_register_model_routes(), $instance->_register_meta_routes() );
 			update_option( self::saved_routes_option_names, $routes, true );
 		}
 	}
@@ -139,6 +139,17 @@ class EED_REST_API extends EED_Module {
 				array( array( 'EE_Config_Rest_Read_Controller', 'handle_request' ), WP_JSON_Server::READABLE ),
 			);
 		return $config_routes;
+	}
+
+	/**
+	 * Gets the meta info routes
+	 * @return array
+	 */
+	protected function _register_meta_routes() {
+		$meta_routes[ self::ee_api_namespace . 'models' ] = array(
+			array( array( 'EE_Meta_Rest_Controller', 'handle_request_models_meta' ), WP_JSON_Server::READABLE )
+		);
+		return $meta_routes;
 	}
 
 
