@@ -87,6 +87,23 @@ class EE_Meta_Rest_Controller {
 		return $response;
 
 	}
+
+	public static function filter_ee_metadata_into_index( $existing_index_info ) {
+		$addons = array();
+		foreach( EE_Registry::instance()->addons as $addon){
+			$addon_json = array(
+				'name' => $addon->name(),
+				'version' => $addon->version()
+			);
+			$addons[ $addon_json[ 'name' ] ] = $addon_json;
+		}
+		$existing_index_info[ 'ee' ] = array(
+			'version' => EEM_System_Status::instance()->get_ee_version(),
+			'addons' => $addons,
+			'maintenance_mode' => EE_Maintenance_Mode::instance()->level() 
+		);
+		return $existing_index_info;
+	}
 }
 
 

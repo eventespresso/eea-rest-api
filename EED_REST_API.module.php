@@ -67,6 +67,7 @@ class EED_REST_API extends EED_Module {
 
 	public static function set_hooks_both() {
 		add_filter( 'json_endpoints', array( 'EED_REST_API', 'register_routes' ) );
+		add_filter( 'json_index', array( 'EE_Meta_Rest_Controller', 'filter_ee_metadata_into_index' ) );
 	}
 
 
@@ -94,7 +95,7 @@ class EED_REST_API extends EED_Module {
 	public static function save_ee_routes() {
 		if( EE_Maintenance_Mode::instance()->models_can_query() ){
 			$instance = self::instance();
-			$routes = array_merge( $instance->_register_config_routes(), $instance->_register_model_routes(), $instance->_register_meta_routes() );
+			$routes = array_merge( $instance->_register_config_routes(),  $instance->_register_meta_routes(), $instance->_register_model_routes() );
 			update_option( self::saved_routes_option_names, $routes, true );
 		}
 	}
