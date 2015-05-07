@@ -33,7 +33,7 @@ dependencies:
     #pull in event-espresso-core master branch
     #note by using $CIRCLE_BRANCH the addon is being tested against the corresponding branch of event-espresso-core.  So development branch of addon will be development branch of core.
     - git clone git@github.com:eventespresso/event-espresso-core.git $event_espresso_core_dir;
-    - cd $event_espresso_core_dir; git checkout $CIRCLE_BRANCH;
+    - cd $event_espresso_core_dir; git checkout FET-7976-permissions-defined-in-models;
     # set up database
     - mysql -e 'CREATE DATABASE wordpress_test;' -uroot;
     # setup phpunit
