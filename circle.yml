@@ -33,7 +33,7 @@ dependencies:
     # move plugin into tests/src
     - mv $plugin_loc $plugin_dir;
     #checkout the wp api master branch
-    - git clone git@github.com:WP-API/WP-API.git $WP_API_DIR;
+    - git clone git@github.com:WP-API/WP-API.git; mv 'WP-API' $WP_API_DIR;
     #pull in event-espresso-core master branch
     #note by using $CIRCLE_BRANCH the addon is being tested against the corresponding branch of event-espresso-core.  So development branch of addon will be development branch of core.
     - git clone git@github.com:eventespresso/event-espresso-core.git $event_espresso_core_dir;
