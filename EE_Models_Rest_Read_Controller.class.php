@@ -399,20 +399,38 @@ class EE_Models_Rest_Read_Controller {
 	public static function create_model_query_params( $model, $filter, $context ) {
 		$model_query_params = array( );
 		if ( isset( $filter[ 'where' ] ) ) {
-			//@todo: no good for permissions
-			$model_query_params[ 0 ] = $filter[ 'where' ];
+			$model_query_params[ 0 ] = EE_Models_Rest_Read_Controller::prepare_rest_query_params_key_for_models( $model, $filter[ 'where' ] );
 		}
 		if ( isset( $filter[ 'order_by' ] ) ) {
-			$model_query_params[ 'order_by' ] = $filter[ 'order_by' ];
+			$order_by = $filter[ 'order_by' ];
 		} elseif ( isset( $filter[ 'orderby' ] ) ) {
-			$model_query_params[ 'order_by' ] = $filter[ 'orderby' ];
+			$order_by = $filter[ 'orderby' ];
+		}else{
+			$order_by = null;
+		}
+		if( $order_by !== null ){
+			$model_query_params[ 'order_by' ] = is_array( $order_by ) ?
+				EE_Models_Rest_Read_Controller::prepare_rest_query_params_key_for_models( $model, $order_by ) :
+				EE_Models_Rest_Read_Controller::prepare_raw_field_for_use_in_models( $order_by );
 		}
 		if ( isset( $filter[ 'group_by' ] ) ) {
-			$model_query_params[ 'group_by' ] = $filter[ 'group_by' ];
+			$group_by = $filter[ 'group_by' ];
+		} elseif ( isset( $filter[ 'groupby' ] ) ) {
+			$group_by = $filter[ 'groupby' ];
+		}else{
+			$group_by = null;
+		}
+		if( $group_by !== null ){
+			if( is_array( $group_by ) ) {
+				$group_by = EE_Models_Rest_Read_Controller::prepare_rest_query_params_values_for_models( $model, $group_by );
+			}else{
+				$group_by = EE_Models_Rest_Read_Controller::prepare_raw_field_for_use_in_models( $models, $group_by );
+			}
+			$model_query_params[ 'group_by' ] = $group_by;
 		}
 		if ( isset( $filter[ 'having' ] ) ) {
 			//@todo: no good for permissions
-			$model_query_params[ 'having' ] = $filter[ 'having' ];
+			$model_query_params[ 'having' ] = EE_Models_Rest_Read_Controller::prepare_rest_query_params_key_for_models( $model, $filter[ 'having' ] );
 		}
 		if ( isset( $filter[ 'order' ] ) ) {
 			$model_query_params[ 'order' ] = $filter[ 'order' ];
@@ -427,6 +445,51 @@ class EE_Models_Rest_Read_Controller {
 		}
 		$model_query_params[ 'caps' ] = $context;
 		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_model_query_params', $model_query_params, $filter, $model, $context );
+	}
+
+	/**
+	 * Changes the REST-style query params for use in the models
+	 * @param EEM_Base $model
+	 * @param array $query_params sub-array from @see EEM_Base::get_all()
+	 */
+	public static function prepare_rest_query_params_key_for_models( $model,  $query_params ) {
+		$model_ready_query_params = array();
+		foreach( $query_params as $key => $value ) {
+			$key = EE_Models_Rest_Read_Controller::prepare_raw_field_for_use_in_models( $key );
+			if( is_array( $value ) ) {
+				$model_ready_query_params[ $key ] = EE_Models_Rest_Read_Controller::prepare_rest_query_params_key_for_models( $model, $value );
+			}else{
+				$model_ready_query_params[ $key ] = $value;
+			}
+		}
+		return $model_ready_query_params;
+	}
+	public static function prepare_rest_query_params_values_for_models( $model,  $query_params ) {
+		$model_ready_query_params = array();
+		foreach( $query_params as $key => $value ) {
+			if( is_array( $value ) ) {
+				$model_ready_query_params[ $key ] = EE_Models_Rest_Read_Controller::prepare_rest_query_params_values_for_models( $model, $value );
+			}else{
+				$model_ready_query_params[ $key ] = EE_Models_Rest_Read_Controller::prepare_raw_field_for_use_in_models( $value );;
+			}
+		}
+		return $model_ready_query_params;
+	}
+
+	/**
+	 * Changes a string like 'Event.EVT_desc_raw*foobar' into
+	 * 'Event.EVT_desc*foobar' in order to prepare it for use by EE models
+	 * @param type $query_param
+	 * @return string
+	 */
+	public static function prepare_raw_field_for_use_in_models( $query_param ) {
+		$parts = explode( '*', $query_param );
+		$key_sans_star = count( $parts) > 1 ? reset( $parts ) : $query_param;
+		$after_star_content = count( $parts ) > 1 ? end( $parts) : '';
+		if(  strpos( $key_sans_star, '_raw' ) == strlen( $key_sans_star ) - strlen( '_raw' ) ){
+			$key_sans_star = substr( $key_sans_star, 0, strpos( $key_sans_star, '_raw' ) );
+		}
+		return $after_star_content ? $key_sans_star . '*' . $after_star_content : $key_sans_star;
 	}
 
 	/**

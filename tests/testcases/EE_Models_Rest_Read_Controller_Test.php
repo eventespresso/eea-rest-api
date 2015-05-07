@@ -188,6 +188,75 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 		$current_user = $this->get_wp_user_mock( $role );
 		return $current_user;
 	}
+
+	/**
+	 * @group 24
+	 */
+	public function test_prepare_rest_query_params_key_for_models() {
+		$this->assertEquals( array(
+			'EVT_desc' => 'foobar',
+			'OR' => array(
+				'EVT_desc*gotcha' => array( 'LIKE', '%foobar%' ),
+				'EVT_name' => 'yep',
+				'EVT_desc*gotchaagain' => array( 'IN', array( '1', '2' ) )
+			)
+		),
+		EE_Models_Rest_Read_Controller::prepare_rest_query_params_key_for_models(
+				EEM_Event::instance(),
+				array(
+					'EVT_desc_raw' => 'foobar',
+					'OR' => array(
+						'EVT_desc_raw*gotcha' => array('LIKE', '%foobar%' ),
+						'EVT_name' => 'yep',
+						'EVT_desc_raw*gotchaagain' => array( 'IN', array( '1', '2' ) ) ) ) ) );
+	}
+
+	/**
+	 * @group 24
+	 */
+	public function test_create_model_query_params(){
+		$this->assertEquals( array(
+					0 => array(
+						'EVT_desc*foobar' => array( 'LIKE', '%frogs%' ),
+						'OR*otherfunanimals' => array(
+							'EVT_name' => array( 'IN', array( 'chickens', 'cows' ) ),
+							'EVT_slug' => 'cowbunga'
+						)
+					),
+					'order_by' => array(
+						'EVT_desc' => 'ASC'
+					),
+					'group_by' => array(
+						'EVT_desc*foobar'
+					),
+					'having' => array(
+						'EVT_desc' => 'monkey'
+					),
+					'limit' => 50,
+					'caps' => EEM_Base::caps_read_admin
+				),
+		EE_Models_Rest_Read_Controller::create_model_query_params(
+				EEM_Event::instance(),
+				array(
+					'where' => array(
+						'EVT_desc_raw*foobar' => array( 'LIKE', '%frogs%' ),
+						'OR*otherfunanimals' => array(
+							'EVT_name' => array( 'IN', array( 'chickens', 'cows' ) ),
+							'EVT_slug' => 'cowbunga'
+						)
+					),
+					'order_by' => array(
+						'EVT_desc_raw' => 'ASC'
+					),
+					'group_by' => array(
+						'EVT_desc_raw*foobar'
+					),
+					'having' => array(
+						'EVT_desc_raw' => 'monkey'
+					),
+				),
+				EEM_Base::caps_read_admin ) );
+	}
 }
 
 // End of file EE_Models_Rest_Read_Controller_Test.php
