@@ -225,6 +225,42 @@ class EE_Models_Rest_Read_Controller {
 	}
 
 	/**
+	 * Returns the list of model field classes that have a "_raw" and non-raw versions.
+	 * Normally the "_raw" versions are only accessible to those who can edit them.
+	 * @return array an array of EE_Model_Field_Base child classnames
+	 */
+	public static function raw_fields() {
+		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__raw_and_pretty_fields', array ('EE_Post_Content_Field' ) );
+	}
+
+	/**
+	 * Returns the list of model field classes that have a "_pretty" and non-pretty versions.
+	 * The pretty version of the field is NOT queryable or editable, but requires no extra permissions
+	 * to view
+	 * @return array an array of EE_Model_Field_Base child classnames
+	 */
+	public static function pretty_fields() {
+		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__raw_and_pretty_fields', array ( 'EE_Enum_Integer_Field', 'EE_Enum_Text_Field', 'EE_Money_Field' ) );
+	}
+
+	/**
+	 * Determines if $object is of one of the classes of $classes. Similar to
+	 * in_array(), except this checks if $object is a subclass of the classnames provided
+	 * in $classnames
+	 * @param type $object
+	 * @param type $classnames
+	 * @return boolean
+	 */
+	public static function is_subclass_of_one( $object, $classnames ) {
+		foreach( $classnames as $classname ) {
+			if( is_a( $object, $classname ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * Changes database results into REST API entities
 	 * @param EEM_Base $model
 	 * @param array $db_row like results from $wpdb->get_results()
@@ -239,14 +275,12 @@ class EE_Models_Rest_Read_Controller {
 			$field_value = $field_obj->prepare_for_set_from_db( $raw_field_value );
 			if( $field_obj instanceof EE_Foreign_Key_Field_Base || $field_obj instanceof EE_Any_Foreign_Model_Name_Field ) {
 				unset( $result[ $field_name ] );
-			}elseif( $field_obj instanceof EE_Post_Content_Field ){
+			}elseif( EE_Models_Rest_Read_Controller::is_subclass_of_one(  $field_obj, EE_Models_Rest_Read_Controller::raw_fields() ) ){
 				$result[ $field_name . '_raw' ] = $field_obj->prepare_for_get( $field_value );
 				$result[ $field_name ] = $field_obj->prepare_for_pretty_echoing( $field_value );
-			}elseif( $field_obj instanceof EE_Enum_Integer_Field ||
-					$field_obj instanceof EE_Enum_Text_Field ||
-					$field_obj instanceof EE_Money_Field ) {
-				$result[ $field_name . '_raw' ] = $field_obj->prepare_for_get( $field_value );
-				$result[ $field_name ] = $field_obj->prepare_for_pretty_echoing( $field_value );
+			}elseif( EE_Models_Rest_Read_Controller::is_subclass_of_one( $field_obj, EE_Models_Rest_Read_Controller::pretty_fields() ) ){
+				$result[ $field_name ] = $field_obj->prepare_for_get( $field_value );
+				$result[ $field_name . '_pretty' ] = $field_obj->prepare_for_pretty_echoing( $field_value );
 			}elseif( $field_obj instanceof EE_Datetime_Field ){
 				$result[ $field_name ] = json_mysql_to_rfc3339( $raw_field_value );
 			}else{
