@@ -39,8 +39,8 @@ Class  EE_REST_API extends EE_Addon {
 				'autoloader_paths' => array(
 					'EE_REST_API' 						=> EE_REST_API_PATH . 'EE_REST_API.class.php',
 					'EE_REST_API_Config' 			=> EE_REST_API_PATH . 'EE_REST_API_Config.php',
-					'REest_Api_Admin_Page' 		=> EE_REST_API_ADMIN . 'REest_Api_Admin_Page.core.php',
-					'REest_Api_Admin_Page_Init' => EE_REST_API_ADMIN . 'REest_Api_Admin_Page_Init.core.php',
+					'Rest_Api_Admin_Page' 		=> EE_REST_API_ADMIN . 'Rest_Api_Admin_Page.core.php',
+					'Rest_Api_Admin_Page_Init' => EE_REST_API_ADMIN . 'Rest_Api_Admin_Page_Init.core.php',
 					'Inflector' => EE_REST_API_PATH . 'core/libraries/Inflector.class.php',
 					'EE_Models_Rest_Read_Controller' => EE_REST_API_PATH . 'EE_Models_Rest_Read_Controller.class.php',
 					'EE_Config_Rest_Read_Controller' => EE_REST_API_PATH . 'EE_Config_Rest_Read_Controller.class.php',

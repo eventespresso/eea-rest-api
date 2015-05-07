@@ -13,12 +13,12 @@
 *
 * ------------------------------------------------------------------------
 *
-* REest_Api_Admin_Page_Init class
+* Rest_Api_Admin_Page_Init class
 *
 * This is the init for the REST_API Addon Admin Pages.  See EE_Admin_Page_Init for method inline docs.
 *
 * @package			Event Espresso (rest_api addon)
-* @subpackage		admin/REest_Api_Admin_Page_Init.core.php
+* @subpackage		admin/Rest_Api_Admin_Page_Init.core.php
 * @author				Mike Nelson
 *
 * ------------------------------------------------------------------------
@@ -29,7 +29,7 @@ class Rest_Api_Admin_Page_Init extends EE_Admin_Page_Init  {
 	 * 	constructor
 	 *
 	 * @access public
-	 * @return \REest_Api_Admin_Page_Init
+	 * @return \Rest_Api_Admin_Page_Init
 	 */
 	public function __construct() {
 
@@ -80,5 +80,5 @@ class Rest_Api_Admin_Page_Init extends EE_Admin_Page_Init  {
 
 
 }
-// End of file REest_Api_Admin_Page_Init.core.php
-// Location: /wp-content/plugins/eea-rest-api/admin/rest_api/REest_Api_Admin_Page_Init.core.php
+// End of file Rest_Api_Admin_Page_Init.core.php
+// Location: /wp-content/plugins/eea-rest-api/admin/rest_api/Rest_Api_Admin_Page_Init.core.php
