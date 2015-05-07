@@ -238,7 +238,7 @@ class EE_Models_Rest_Read_Controller {
 	 * @return array an array of EE_Model_Field_Base child classnames
 	 */
 	public static function fields_raw() {
-		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__fields_raw', array ('EE_Post_Content_Field' ) );
+		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__fields_raw', array ('EE_Post_Content_Field', 'EE_Full_HTML_Field' ) );
 	}
 
 	/**
