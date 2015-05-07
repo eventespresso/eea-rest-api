@@ -20,11 +20,11 @@
  *
  * @package			REST_API_Admin_Page (rest_api addon)
  * @subpackage 	admin/REST_API_Admin_Page.core.php
- * @author				Darren Ethier, Brent Christensen
+ * @author				Mike Nelson
  *
  * ------------------------------------------------------------------------
  */
-class REST_API_Admin_Page extends EE_Admin_Page {
+class Rest_Api_Admin_Page extends EE_Admin_Page {
 
 
 	protected function _init_page_props() {

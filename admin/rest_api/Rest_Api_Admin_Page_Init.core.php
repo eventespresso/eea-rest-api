@@ -19,11 +19,11 @@
 *
 * @package			Event Espresso (rest_api addon)
 * @subpackage		admin/REST_API_Admin_Page_Init.core.php
-* @author				Darren Ethier
+* @author				Mike Nelson
 *
 * ------------------------------------------------------------------------
 */
-class REST_API_Admin_Page_Init extends EE_Admin_Page_Init  {
+class Rest_Api_Admin_Page_Init extends EE_Admin_Page_Init  {
 
 	/**
 	 * 	constructor
