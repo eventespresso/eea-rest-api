@@ -15,11 +15,13 @@ machine:
     WP_MULTISITE: 0
     WP_CORE_DIR: /home/ubuntu/wordpress-develop
     WP_TESTS_DIR: /home/ubuntu/wordpress-develop/tests/phpunit
+    WP_API_DIR: /home/ubuntu/wordpress-develop/src/wp-content/plugins/WP-API
     plugin_loc: /home/ubuntu/$CIRCLE_PROJECT_REPONAME
     plugin_slug: $CIRCLE_PROJECT_REPONAME
     plugin_dir: /home/ubuntu/wordpress-develop/src/wp-content/plugins/$plugin_slug
     plugin_tests_dir: /home/ubuntu/wordpress-develop/src/wp-content/plugins/$plugin_slug/tests
     event_espresso_core_dir: /home/ubuntu/wordpress-develop/src/wp-content/plugins/event-espresso-core
+
 
 
 ## Customize dependencies
@@ -31,7 +33,7 @@ dependencies:
     # move plugin into tests/src
     - mv $plugin_loc $plugin_dir;
     #checkout the wp api master branch
-    - git clone git@github.com:WP-API/WP-API.git;
+    - git clone git@github.com:WP-API/WP-API.git $plugin_loc;
     #pull in event-espresso-core master branch
     #note by using $CIRCLE_BRANCH the addon is being tested against the corresponding branch of event-espresso-core.  So development branch of addon will be development branch of core.
     - git clone git@github.com:eventespresso/event-espresso-core.git $event_espresso_core_dir;
