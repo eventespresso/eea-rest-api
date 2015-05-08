@@ -39,7 +39,6 @@ class EE_Models_Rest_Read_Controller {
 	 */
 	public static function handle_request_get_all( $_path, $filter = array(), $include = '*', $context = EEM_Base::caps_read ) {
 		try{
-			$inflector = new Inflector();
 			$regex = '~' . EED_REST_API::ee_api_namespace_for_regex . '(.*)~';
 			$success = preg_match( $regex, $_path, $matches );
 			if ( is_array( $matches ) && isset( $matches[ 1 ] ) ) {
