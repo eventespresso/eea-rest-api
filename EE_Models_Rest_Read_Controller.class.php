@@ -291,7 +291,9 @@ class EE_Models_Rest_Read_Controller {
 			}elseif( $field_obj instanceof EE_Datetime_Field ){
 				$result[ $field_name ] = json_mysql_to_rfc3339( $raw_field_value );
 			}else{
-				$result[ $field_name ] = $field_obj->prepare_for_get( $field_value );
+				$value_prepared = $field_obj->prepare_for_get( $field_value );
+
+				$result[ $field_name ] = $value_prepared === INF ? EE_INF_IN_DB : $value_prepared;
 			}
 		}
 		//add links to related data
@@ -581,43 +583,6 @@ class EE_Models_Rest_Read_Controller {
 		}else{
 			return EEM_Base::caps_read;
 		}
-	}
-
-
-	public static function handle_request_models_meta() {
-		$response = array();
-		foreach( EE_Registry::instance()->non_abstract_db_models as $model_name => $model_classname ){
-			$model = EE_Registry::instance()->load_model( $model_name );
-			$response[ $model_name ]['fields'] = array();
-			foreach( $model->field_settings() as $field_name => $field_obj ) {
-				if( $field_obj instanceof EE_Boolean_Field ) {
-					$datatype = 'Boolean';
-				}elseif( $field_obj->get_wpdb_data_type() == '%d' ) {
-					$datatype = 'Number';
-				}elseif( $field_name instanceof EE_Serialized_Text_Field ) {
-					$datatype = 'Object';
-				}else{
-					$datatype = 'String';
-				}
-				$field_json = array(
-					'name' => $field_name,
-					'nicename' => $field_obj->get_nicename(),
-					'queryable' => true,
-					'editable' => true,
-					'datatype' => $datatype,
-					'nullable' => $field_obj->is_nullable(),
-					'default' => $field_obj->get_default_value() === INF ? EE_INF_IN_DB : $field_obj->get_default_value(),
-					'table_alias' => $field_obj->get_table_alias(),
-					'table_column' => $field_obj->get_table_column(),
-
-
-				);
-				$response[ $model_name ]['fields'][ $field_name ] = $field_json;
-			}
-
-		}
-		return $response;
-
 	}
 }
 
