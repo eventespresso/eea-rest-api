@@ -27,8 +27,10 @@
  */
 
 class EE_REST_API_Config extends EE_Config_Base {
-
-
+	public $api_debug_mode = false;
+	public function __construct(){
+		$this->api_debug_mode = false;
+	}
 
 }
 
