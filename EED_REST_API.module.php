@@ -147,7 +147,7 @@ class EED_REST_API extends EED_Module {
 	 * @return array
 	 */
 	protected function _register_meta_routes() {
-		$meta_routes[ self::ee_api_namespace . 'models' ] = array(
+		$meta_routes[ self::ee_api_namespace . 'resources' ] = array(
 			array( array( 'EE_Meta_Rest_Controller', 'handle_request_models_meta' ), WP_JSON_Server::READABLE )
 		);
 		return $meta_routes;

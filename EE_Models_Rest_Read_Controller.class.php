@@ -45,7 +45,7 @@ class EE_Models_Rest_Read_Controller {
 				$model_name_plural = $matches[ 1 ];
 				$model_name_singular = EE_Inflector::singularize_and_upper( $model_name_plural );
 				if ( ! EE_Registry::instance()->is_model_name( $model_name_singular ) ) {
-					return new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) );
+					return $this->send_response( new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) ) );
 				}
 				return self::send_response(
 						self::get_entities_from_model(
@@ -54,10 +54,10 @@ class EE_Models_Rest_Read_Controller {
 								$include,
 								self::validate_context( $context ) ) );
 			} else {
-				return new WP_Error( 'endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
+				return $this->send_response( new WP_Error( 'endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) ) );
 			}
 		}catch( EE_Error $e ){
-			return new WP_Error( 'ee_exception', $e->getMessage() . ( defined('WP_DEBUG') && WP_DEBUG ? $e->getTraceAsString() : '' ) );
+			return self::send_response( new WP_Error( 'ee_exception', $e->getMessage() . ( defined('WP_DEBUG') && WP_DEBUG ? $e->getTraceAsString() : '' ) ) );
 		}
 	}
 
@@ -78,7 +78,7 @@ class EE_Models_Rest_Read_Controller {
 				$model_name_plural = $matches[ 1 ];
 				$model_name_singular = EE_Inflector::singularize_and_upper( $model_name_plural );
 				if ( ! EE_Registry::instance()->is_model_name( $model_name_singular ) ) {
-					return new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) );
+					return $this->send_response( new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) ) );
 				}
 				return self::send_response(
 						self::get_entity_from_model(
@@ -87,10 +87,10 @@ class EE_Models_Rest_Read_Controller {
 								$include,
 								self::validate_context( $context ) ) );
 			}else{
-				return new WP_Error( 'endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) );
+				return $this->send_response( new WP_Error( 'endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) ) );
 			}
 		}catch( EE_Error $e ){
-			return new WP_Error( 'ee_exception', $e->getMessage() . ( defined('WP_DEBUG') && WP_DEBUG ? $e->getTraceAsString() : '' ) );
+			return $this->send_response( new WP_Error( 'ee_exception', $e->getMessage() . ( defined('WP_DEBUG') && WP_DEBUG ? $e->getTraceAsString() : '' ) ) );
 		}
 	}
 
@@ -113,13 +113,13 @@ class EE_Models_Rest_Read_Controller {
 				$main_model_name_plural = $matches[ 1 ];
 				$main_model_name_singular = EE_Inflector::singularize_and_upper( $main_model_name_plural );
 				if ( ! EE_Registry::instance()->is_model_name( $main_model_name_singular ) ) {
-					return new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $main_model_name_singular ) );
+					return $this->send_response( new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $main_model_name_singular ) ) );
 				}
 				$main_model = EE_Registry::instance()->load_model( $main_model_name_singular );
 				$related_model_name_maybe_plural = $matches[ 3 ];
 				$related_model_name_singular = EE_Inflector::singularize_and_upper( $related_model_name_maybe_plural );
 				if ( ! EE_Registry::instance()->is_model_name( $related_model_name_singular ) ) {
-					return new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $related_model_name_singular ) );
+					return $this->send_response( new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $related_model_name_singular ) ) );
 				}
 
 				return self::send_response(
@@ -131,7 +131,7 @@ class EE_Models_Rest_Read_Controller {
 								self::validate_context( $context ) ) );
 			}
 		}catch( EE_Error $e ){
-			return new WP_Error( 'ee_exception', $e->getMessage() . ( defined('WP_DEBUG') && WP_DEBUG ? $e->getTraceAsString() : '' ) );
+			return $this->send_response( new WP_Error( 'ee_exception', $e->getMessage() . ( defined('WP_DEBUG') && WP_DEBUG ? $e->getTraceAsString() : '' ) ) );
 		}
 	}
 
@@ -371,7 +371,7 @@ class EE_Models_Rest_Read_Controller {
 			$model_rows_found_sans_restrictions = $model->get_all_wpdb_results( $query_params );
 			if( ! empty( $model_rows_found_sans_restrictions ) ) {
 				//you got shafted- it existed but we didn't want to tell you!
-				return new WP_Error( 'json_user_cannot_read', sprintf( __( 'Sorry, you cannot read this %s', 'event_espresso' ), strtolower( $model->get_this_model_name() ) ) );
+				return new WP_Error( 'json_user_cannot_read', sprintf( __( 'Sorry, you cannot read this %s', 'event_espresso' ), strtolower( $model->get_this_model_name() ) ), array( 'status' => 403 ) );
 			}else{
 				//it's not you. It just doesn't exist
 				return new WP_Error( sprintf( 'json_%s_invalid_id', $lowercase_model_name ), sprintf( __( 'Invalid %s ID.', 'event_espresso' ), $lowercase_model_name ), array( 'status' => 404 ) );
@@ -550,17 +550,35 @@ class EE_Models_Rest_Read_Controller {
 	 */
 	protected static function send_response( $response ) {
 		if( $response instanceof WP_Error ) {
-			return $response;
-		}else{
-			$headers = array();
-			foreach( self::$_debug_info  as $debug_key => $debug_info ) {
-				if( is_array( $debug_info ) ) {
-					$debug_info = json_encode( $debug_info );
-				}
-				$headers[ 'X-EE4-Debug-' . ucwords( $debug_key ) ] = $debug_info;
+			//we want to send a "normal"-looking WP error response, but we also
+			//want to add headers. It doesn't seem WP API 1.2 supports this.
+			//I'd like to use WP_JSON_Server::error_to_response() but its protected
+			//so here's most of it copy-and-pasted :P
+			$error_data = $response->get_error_data();
+			if ( is_array( $error_data ) && isset( $error_data['status'] ) ) {
+				$status = $error_data['status'];
+			} else {
+				$status = 500;
 			}
-			return new WP_JSON_Response( $response, 200,  $headers );
+
+			$data = array();
+			foreach ( (array) $response->errors as $code => $messages ) {
+				foreach ( (array) $messages as $message ) {
+					$data[] = array( 'code' => $code, 'message' => $message );
+				}
+			}
+			$response = new WP_JSON_Response( $data, $status );
+		}else{
+			$status = 200;
 		}
+		$headers = array();
+		foreach( self::$_debug_info  as $debug_key => $debug_info ) {
+			if( is_array( $debug_info ) ) {
+				$debug_info = json_encode( $debug_info );
+			}
+			$headers[ 'X-EE4-Debug-' . ucwords( $debug_key ) ] = $debug_info;
+		}
+		return new WP_JSON_Response( $response, $status,  $headers );
 	}
 
 	/**

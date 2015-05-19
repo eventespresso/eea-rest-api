@@ -149,21 +149,21 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 		$e = $this->new_model_obj_with_dependencies('Event');
 		$non_existent_id = $e->ID() + 100;
 		$response = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'events/' . $non_existent_id, $non_existent_id );
-		$this->assertInstanceOf( 'WP_Error', $response );
-		$this->assertEquals( 'json_event_invalid_id', $response->get_error_code() );
+		$this->assertInstanceOf( 'WP_JSON_Response', $response );
+		$this->assertEquals( 404, $response->get_status() );
 	}
 	public function test_handle_request_get_one__cannot_accesss(){
 		$e = $this->new_model_obj_with_dependencies('Event', array( 'status' => 'draft' ) );
 		$response = EE_Models_Rest_Read_Controller::handle_request_get_one( EED_REST_API::ee_api_namespace . 'events/' . $e->ID(), $e->ID() );
-		$this->assertInstanceOf( 'WP_Error', $response );
-		$this->assertEquals( 'json_user_cannot_read', $response->get_error_code() );
+		$this->assertInstanceOf( 'WP_JSON_Response', $response );
+		$this->assertEquals( 403, $response->get_status() );
 	}
 
 	public function test_handle_request_get_all__not_logged_in(){
 		$r = $this->new_model_obj_with_dependencies('Registration');
 		$response = EE_Models_Rest_Read_Controller::handle_request_get_all( EED_REST_API::ee_api_namespace . 'registrations' );
-		$this->assertInstanceOf( 'WP_Error', $response );
-		$this->assertEquals( 'json_registrations_cannot_list', $response->get_error_code() );
+		$this->assertInstanceOf( 'WP_JSON_Response', $response );
+		$this->assertEquals( 403, $response->get_status() );
 	}
 
 	/**
