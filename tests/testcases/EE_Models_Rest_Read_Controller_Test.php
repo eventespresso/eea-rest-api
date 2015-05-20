@@ -254,8 +254,8 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 					'having' => array(
 						'EVT_desc_raw' => 'monkey'
 					),
-				),
-				EEM_Base::caps_read_admin ) );
+					'caps' => EEM_Base::caps_read_admin
+				) ) );
 	}
 }
 

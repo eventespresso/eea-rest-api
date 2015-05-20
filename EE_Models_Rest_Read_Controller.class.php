@@ -34,10 +34,9 @@ class EE_Models_Rest_Read_Controller {
 	 * "tickets":[{"TKT_ID":234,"TKT_name":"student rate","TKT_price":32.0},...]}]}', ie, events with all
 	 * their associated datetimes (including ones that are trashed) embedded in the json object, and each
 	 * datetime also has each associated ticket embedded in its json object.
-	 * @param string $context one of return values from EEM_Base::valid_cap_contexts(), controls what capability restrictions to apply to this request
 	 * @return WP_JSON_Response|WP_Error
 	 */
-	public static function handle_request_get_all( $_path, $filter = array(), $include = '*', $context = EEM_Base::caps_read ) {
+	public static function handle_request_get_all( $_path, $filter = array(), $include = '*' ) {
 		try{
 			$regex = '~' . EED_REST_API::ee_api_namespace_for_regex . '(.*)~';
 			$success = preg_match( $regex, $_path, $matches );
@@ -51,8 +50,7 @@ class EE_Models_Rest_Read_Controller {
 						self::get_entities_from_model(
 								EE_Registry::instance()->load_model( $model_name_singular ),
 								$filter,
-								$include,
-								self::validate_context( $context ) ) );
+								$include ) );
 			} else {
 				return $this->send_response( new WP_Error( 'endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) ) );
 			}
@@ -66,10 +64,10 @@ class EE_Models_Rest_Read_Controller {
 	 * @param string $_path
 	 * @param string $id ID of the thing to be retrieved
 	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
-	 * @param string $context one of return values from EEM_Base::valid_cap_contexts()
+	 * @param string $filter @see handle_request_get_all, for now only the 'caps' item is used
 	 * @return WP_JSON_Response|WP_Error
 	 */
-	public static function handle_request_get_one( $_path, $id, $include = '*', $context = EEM_Base::caps_read ) {
+	public static function handle_request_get_one( $_path, $id, $include = '*', $filter = array() ) {
 		try{
 			$inflector = new Inflector();
 			$regex = '~' . EED_REST_API::ee_api_namespace_for_regex . '(.*)/(.*)~';
@@ -85,7 +83,7 @@ class EE_Models_Rest_Read_Controller {
 								EE_Registry::instance()->load_model( $model_name_singular ),
 								$id,
 								$include,
-								self::validate_context( $context ) ) );
+								self::validate_context( isset( $filter[ 'caps' ] ) ? $filter[ 'caps' ] : EEM_Base::caps_read ) ) );
 			}else{
 				return $this->send_response( new WP_Error( 'endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) ) );
 			}
@@ -102,10 +100,9 @@ class EE_Models_Rest_Read_Controller {
 	 * @param string $id
 	 * @param array $filter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
 	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
-	 * @param string $context one of return values from EEM_Base::valid_cap_contexts()
 	 * @return WP_JSON_Response|WP_Error
 	 */
-	public static function handle_request_get_related( $_path, $id, $filter = array(), $include = '*', $context = EEM_Base::caps_read ) {
+	public static function handle_request_get_related( $_path, $id, $filter = array(), $include = '*' ) {
 		try{
 			$regex = '~' . EED_REST_API::ee_api_namespace_for_regex . '(.*)/(.*)/(.*)~';
 			$success = preg_match( $regex, $_path, $matches );
@@ -127,8 +124,7 @@ class EE_Models_Rest_Read_Controller {
 								$id,
 								$main_model->related_settings_for( $related_model_name_singular ) ,
 								$filter,
-								$include,
-								self::validate_context( $context ) ) );
+								$include ) );
 			}
 		}catch( EE_Error $e ){
 			return $this->send_response( new WP_Error( 'ee_exception', $e->getMessage() . ( defined('WP_DEBUG') && WP_DEBUG ? $e->getTraceAsString() : '' ) ) );
@@ -142,20 +138,20 @@ class EE_Models_Rest_Read_Controller {
 	 * @param EEM_Base $model
 	 * @param array $filter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
 	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
-	 * @param string $context one of return values from EEM_Base::valid_cap_contexts()
 	 * @return array
 	 */
-	public static function get_entities_from_model( $model, $filter, $include, $context ) {
-		if( ! EE_REST_API_Capabilities::current_user_has_partial_access_to( $model, $context ) ) {
+	public static function get_entities_from_model( $model, $filter, $include ) {
+		$query_params = self::create_model_query_params( $model, $filter );
+		if( ! EE_REST_API_Capabilities::current_user_has_partial_access_to( $model, $query_params[ 'caps' ] ) ) {
 			$model_name_plural = EE_Inflector::pluralize_and_lower( $model->get_this_model_name() );
-			return new WP_Error( sprintf( 'json_%s_cannot_list', $model_name_plural), sprintf( __( 'Sorry, you are not allowed to list %s. Missing permissions: %s' ), $model_name_plural, EE_REST_API_Capabilities::get_missing_permissions_string( $model, $context ) ), array( 'status' => 403 ) );
+			return new WP_Error( sprintf( 'json_%s_cannot_list', $model_name_plural), sprintf( __( 'Sorry, you are not allowed to list %s. Missing permissions: %s' ), $model_name_plural, EE_REST_API_Capabilities::get_missing_permissions_string( $model,  $query_params[ 'caps' ] ) ), array( 'status' => 403 ) );
 		}
-		$query_params = self::create_model_query_params( $model, $filter, $context );
+
 		self::_set_debug_info( 'model query params', $query_params );
 		$results = $model->get_all_wpdb_results( $query_params );
 		$nice_results = array( );
 		foreach ( $results as $result ) {
-			$nice_results[ ] = self::create_entity_from_wpdb_result( $model, $result, $include, $context );
+			$nice_results[ ] = self::create_entity_from_wpdb_result( $model, $result, $include,  $query_params[ 'caps' ] );
 		}
 		return $nice_results;
 	}
@@ -170,10 +166,10 @@ class EE_Models_Rest_Read_Controller {
 	 * @param EE_Model_Relation_Base $relation
 	 * @param array $filter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
 	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
-	 * @param string $context one of the return values from EEM_Base::valid_cap_contexts()
 	 * @return array
 	 */
-	public static function get_entities_from_relation( $id,  $relation, $filter, $include, $context ) {
+	public static function get_entities_from_relation( $id,  $relation, $filter, $include ) {
+		$context = self::validate_context( isset( $filter[ 'caps' ] ) ? $filter[ 'caps' ] : EEM_Base::caps_read);
 		$model = $relation->get_this_model();
 		$related_model = $relation->get_other_model();
 		//check if they can access the 1st model object
@@ -202,11 +198,11 @@ class EE_Models_Rest_Read_Controller {
 		$results = $relation->get_other_model()->get_all_wpdb_results( $query_params );
 		$nice_results = array();
 		foreach( $results as $result ) {
-			$nice_result = self::create_entity_from_wpdb_result( $relation->get_other_model(), $result, $include, $context );
+			$nice_result = self::create_entity_from_wpdb_result( $relation->get_other_model(), $result, $include, $query_params[ 'caps' ] );
 			if( $relation instanceof EE_HABTM_Relation ) {
 				//put the unusual stuff (properties from the HABTM relation) first, and make sure
 				//if there are conflicts we prefer the properties from the main model
-				$join_model_result = self::create_entity_from_wpdb_result( $relation->get_join_model(), $result, $include, $context );
+				$join_model_result = self::create_entity_from_wpdb_result( $relation->get_join_model(), $result, $include, $query_params[ 'caps' ] );
 				$joined_result = array_merge( $nice_result, $join_model_result );
 				//but keep the meta stuff from the main model
 				if( isset( $nice_result['meta'] ) ){
@@ -318,7 +314,7 @@ class EE_Models_Rest_Read_Controller {
 			}
 			$related_fields_to_include = self::extract_includes_for_this_model( $include, $relation_name );
 			if( $related_fields_to_include ) {
-				 $related_results = self::get_entities_from_relation( $result[ $model->primary_key_name() ], $relation_obj, array(), implode(',',self::extract_includes_for_this_model( $include, $relation_name ) ), $context  );
+				 $related_results = self::get_entities_from_relation( $result[ $model->primary_key_name() ], $relation_obj, array('caps' => $context ), implode(',',self::extract_includes_for_this_model( $include, $relation_name ) )  );
 				 $result[ $related_model_part ] = $related_results instanceof WP_Error ? null : $related_results;
 			}
 		}
@@ -388,7 +384,7 @@ class EE_Models_Rest_Read_Controller {
 	 */
 	public static function validate_context( $context ) {
 		$valid_contexts = EEM_Base::valid_cap_contexts();
-		if( isset( $valid_contexts[ $context ]) ){
+		if( in_array( $context, $valid_contexts )  ){
 			return $context;
 		}else{
 			return EEM_Base::caps_read;
@@ -401,11 +397,10 @@ class EE_Models_Rest_Read_Controller {
 	 * Translates API filter get parameter into $query_params array used by EEM_Base::get_all()
 	 * @param EEM_Base $model
 	 * @param array $filter from $_GET['filter'] parameter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
-	 * @param string $context one of return values from EEM_Base::valid_cap_contexts()
 	 * @return array like what EEM_Base::get_all() expects or FALSE to indicate
 	 * that absolutely no results should be returned
 	 */
-	public static function create_model_query_params( $model, $filter, $context ) {
+	public static function create_model_query_params( $model, $filter ) {
 		$model_query_params = array( );
 		if ( isset( $filter[ 'where' ] ) ) {
 			$model_query_params[ 0 ] = EE_Models_Rest_Read_Controller::prepare_rest_query_params_key_for_models( $model, $filter[ 'where' ] );
@@ -452,8 +447,12 @@ class EE_Models_Rest_Read_Controller {
 		}else{
 			$model_query_params[ 'limit' ] = 50;
 		}
-		$model_query_params[ 'caps' ] = $context;
-		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_model_query_params', $model_query_params, $filter, $model, $context );
+		if( isset( $filter[ 'caps' ] ) ) {
+			$model_query_params[ 'caps' ] = self::validate_context( $filter[ 'caps' ] );
+		}else{
+			$model_query_params[ 'caps' ] = EEM_Base::caps_read;
+		}
+		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_model_query_params', $model_query_params, $filter, $model );
 	}
 
 	/**
