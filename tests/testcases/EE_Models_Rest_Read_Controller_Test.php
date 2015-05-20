@@ -193,6 +193,7 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 	 * @group 24
 	 */
 	public function test_prepare_rest_query_params_key_for_models() {
+		$controller = new EE_Models_Rest_Read_Controller();
 		$this->assertEquals( array(
 			'EVT_desc' => 'foobar',
 			'OR' => array(
@@ -201,7 +202,7 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 				'EVT_desc*gotchaagain' => array( 'IN', array( '1', '2' ) )
 			)
 		),
-		EE_Models_Rest_Read_Controller::prepare_rest_query_params_key_for_models(
+		$controller->prepare_rest_query_params_key_for_models(
 				EEM_Event::instance(),
 				array(
 					'EVT_desc_raw' => 'foobar',
@@ -215,6 +216,7 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 	 * @group 24
 	 */
 	public function test_create_model_query_params(){
+		$controller = new EE_Models_Rest_Read_Controller();
 		$this->assertEquals( array(
 					0 => array(
 						'EVT_desc*foobar' => array( 'LIKE', '%frogs%' ),
@@ -235,7 +237,7 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 					'limit' => 50,
 					'caps' => EEM_Base::caps_read_admin
 				),
-		EE_Models_Rest_Read_Controller::create_model_query_params(
+		$controller->create_model_query_params(
 				EEM_Event::instance(),
 				array(
 					'where' => array(
