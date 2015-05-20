@@ -16,7 +16,12 @@ if ( !defined( 'EVENT_ESPRESSO_VERSION' ) ) {
  */
 class EE_Config_Rest_Read_Controller {
 	public static function handle_request() {
+		$cap = EE_Restriction_Generator_Base::get_default_restrictions_cap();
+		if( EE_Capabilities::instance()->current_user_can( $cap, 'read_over_api' ) ){
 			return EE_Config::instance();
+		}else{
+			return new WP_Error( 'cannot_read_config', sprintf( __( 'You do not have the necessary capabilities (%s) to read Event Espresso Configuration data', 'event_espresso' ), $cap ), array( 'status' => 403 ));
+		}
 	}
 }
 

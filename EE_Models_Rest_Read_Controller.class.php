@@ -615,19 +615,6 @@ class EE_Models_Rest_Read_Controller {
 	protected function _set_debug_info( $key, $info ){
 		$this->_debug_info[ $key ] = $info;
 	}
-
-	/**
-	 * Figures out which model capability context to use for this request
-	 * @param array $filter
-	 * @return string one of the return values from EEM_Base::valid_cap_contexts()
-	 */
-	public function extract_model_context( $filter ) {
-		if( isset( $filter['context'] ) ) {
-			return $filter[ 'context' ];
-		}else{
-			return EEM_Base::caps_read;
-		}
-	}
 }
 
 
