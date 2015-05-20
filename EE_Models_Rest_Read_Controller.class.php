@@ -367,7 +367,7 @@ class EE_Models_Rest_Read_Controller {
 			$model_rows_found_sans_restrictions = $model->get_all_wpdb_results( $query_params );
 			if( ! empty( $model_rows_found_sans_restrictions ) ) {
 				//you got shafted- it existed but we didn't want to tell you!
-				return new WP_Error( 'json_user_cannot_read', sprintf( __( 'Sorry, you cannot read this %s', 'event_espresso' ), strtolower( $model->get_this_model_name() ) ), array( 'status' => 403 ) );
+				return new WP_Error( 'json_user_cannot_read', sprintf( __( 'Sorry, you cannot read this %1$s. Missing permissions are: %2$s', 'event_espresso' ), strtolower( $model->get_this_model_name() ), EE_REST_API_Capabilities::get_missing_permissions_string( $model, $context ) ), array( 'status' => 403 ) );
 			}else{
 				//it's not you. It just doesn't exist
 				return new WP_Error( sprintf( 'json_%s_invalid_id', $lowercase_model_name ), sprintf( __( 'Invalid %s ID.', 'event_espresso' ), $lowercase_model_name ), array( 'status' => 404 ) );
