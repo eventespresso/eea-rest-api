@@ -28,12 +28,12 @@ machine:
 dependencies:
   pre:
     #setup WP install
-    - git clone -b master git://develop.git.wordpress.org/ $WP_CORE_DIR;
+    - git clone git://develop.git.wordpress.org/ $WP_CORE_DIR;
     - cd $WP_CORE_DIR && cp wp-tests-config-sample.php wp-tests-config.php && sed -i "s/youremptytestdbnamehere/wordpress_test/" wp-tests-config.php && sed -i "s/yourusernamehere/root/" wp-tests-config.php && sed -i "s/yourpasswordhere//" wp-tests-config.php;
     # move plugin into tests/src
     - mv $plugin_loc $plugin_dir;
     #checkout the wp api master branch
-    - git clone git@github.com:WP-API/WP-API.git; mv 'WP-API' $WP_API_DIR;
+    - git clone -b master git@github.com:WP-API/WP-API.git; mv 'WP-API' $WP_API_DIR;
     #pull in event-espresso-core master branch
     #note by using $CIRCLE_BRANCH the addon is being tested against the corresponding branch of event-espresso-core.  So development branch of addon will be development branch of core.
     - git clone git@github.com:eventespresso/event-espresso-core.git $event_espresso_core_dir;
