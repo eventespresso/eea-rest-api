@@ -30,6 +30,7 @@ class EE_Models_Rest_Read_Controller {
 	public function __construct() {
 		$api_config = EE_Config::instance()->get_config( 'addons', 'EE_REST_API', 'EE_REST_API_Config' );
 		$this->_debug_mode = $api_config->api_debug_mode;
+		EE_Registry::instance()->load_helper( 'Inflector' );
 	}
 	/**
 	 * Handles requests to get all (or a filtered subset) of entities for a particular model
@@ -54,7 +55,7 @@ class EE_Models_Rest_Read_Controller {
 			$success = preg_match( $regex, $_path, $matches );
 			if ( is_array( $matches ) && isset( $matches[ 1 ] ) ) {
 				$model_name_plural = $matches[ 1 ];
-				$model_name_singular = EE_Inflector::singularize_and_upper( $model_name_plural );
+				$model_name_singular = EEH_Inflector::singularize_and_upper( $model_name_plural );
 				if ( ! EE_Registry::instance()->is_model_name( $model_name_singular ) ) {
 					return $this->send_response( new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) ) );
 				}
@@ -87,7 +88,7 @@ class EE_Models_Rest_Read_Controller {
 			$success = preg_match( $regex, $_path, $matches );
 			if ( $success && is_array( $matches ) && isset( $matches[ 1 ] ) ) {
 				$model_name_plural = $matches[ 1 ];
-				$model_name_singular = EE_Inflector::singularize_and_upper( $model_name_plural );
+				$model_name_singular = EEH_Inflector::singularize_and_upper( $model_name_plural );
 				if ( ! EE_Registry::instance()->is_model_name( $model_name_singular ) ) {
 					return $this->send_response( new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) ) );
 				}
@@ -122,13 +123,13 @@ class EE_Models_Rest_Read_Controller {
 			$success = preg_match( $regex, $_path, $matches );
 			if ( is_array( $matches ) && isset( $matches[ 1 ] ) && isset( $matches[3] ) ) {
 				$main_model_name_plural = $matches[ 1 ];
-				$main_model_name_singular = EE_Inflector::singularize_and_upper( $main_model_name_plural );
+				$main_model_name_singular = EEH_Inflector::singularize_and_upper( $main_model_name_plural );
 				if ( ! EE_Registry::instance()->is_model_name( $main_model_name_singular ) ) {
 					return $this->send_response( new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $main_model_name_singular ) ) );
 				}
 				$main_model = EE_Registry::instance()->load_model( $main_model_name_singular );
 				$related_model_name_maybe_plural = $matches[ 3 ];
-				$related_model_name_singular = EE_Inflector::singularize_and_upper( $related_model_name_maybe_plural );
+				$related_model_name_singular = EEH_Inflector::singularize_and_upper( $related_model_name_maybe_plural );
 				if ( ! EE_Registry::instance()->is_model_name( $related_model_name_singular ) ) {
 					return $this->send_response( new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $related_model_name_singular ) ) );
 				}
@@ -157,7 +158,7 @@ class EE_Models_Rest_Read_Controller {
 	public function get_entities_from_model( $model, $filter, $include ) {
 		$query_params = $this->create_model_query_params( $model, $filter );
 		if( ! EE_REST_API_Capabilities::current_user_has_partial_access_to( $model, $query_params[ 'caps' ] ) ) {
-			$model_name_plural = EE_Inflector::pluralize_and_lower( $model->get_this_model_name() );
+			$model_name_plural = EEH_Inflector::pluralize_and_lower( $model->get_this_model_name() );
 			return new WP_Error( sprintf( 'json_%s_cannot_list', $model_name_plural), sprintf( __( 'Sorry, you are not allowed to list %s. Missing permissions: %s' ), $model_name_plural, EE_REST_API_Capabilities::get_missing_permissions_string( $model,  $query_params[ 'caps' ] ) ), array( 'status' => 403 ) );
 		}
 
@@ -201,7 +202,7 @@ class EE_Models_Rest_Read_Controller {
 			if( $relation instanceof EE_Belongs_To_Relation ) {
 				$related_model_name_maybe_plural = strtolower( $related_model->get_this_model_name() );
 			}else{
-				$related_model_name_maybe_plural = EE_Inflector::pluralize_and_lower( $related_model->get_this_model_name() );
+				$related_model_name_maybe_plural = EEH_Inflector::pluralize_and_lower( $related_model->get_this_model_name() );
 			}
 			return new WP_Error( sprintf( 'json_%s_cannot_list', $related_model_name_maybe_plural ), sprintf( __( 'Sorry, you are not allowed to list %s related to %s. Missing permissions: %s' ), $related_model_name_maybe_plural, $related_model->get_this_model_name(), implode(',', array_keys( EE_REST_API_Capabilities::get_missing_permissions( $related_model, $context ) ) )  ), array( 'status' => 403 ) );
 		}
