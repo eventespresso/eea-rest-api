@@ -27,10 +27,51 @@ class EE_Models_Rest_Read_Controller {
 	 */
 	protected $_debug_mode = false;
 
+	/**
+	 *
+	 * @var array top-level keys are model classnames; even
+	 */
+	protected $_extra_fields_for_models = array(
+
+	);
+
 	public function __construct() {
 		$api_config = EE_Config::instance()->get_config( 'addons', 'EE_REST_API', 'EE_REST_API_Config' );
 		$this->_debug_mode = $api_config->api_debug_mode;
 		EE_Registry::instance()->load_helper( 'Inflector' );
+
+		//setup data for "extra" fields added onto resources which don't actually exist on models
+		$this->_extra_fields_for_models = apply_filters(
+				'FHEE__EE_Models_Rest_Read_Controller___construct__extra_fields_for_models',
+				array(
+					'EEM_CPT_Base' => array(
+						'featured_image_url' => array(
+							'name' => 'featured_image_url',
+							'nicename' => __( 'Featured Image URL', 'event_espresso' ),
+							'datatype' => 'String',
+							'nullable' => true,
+						)
+				)
+		));
+		$defaults = array(
+			'raw' => false,
+			'type' => 'N/A',
+			'nullable' => true,
+			'table_alias' => 'N/A',
+			'table_column' => 'N/A',
+			'always_available' => true,
+		);
+		foreach( $this->_extra_fields_for_models as $model_classname => $extra_fields ) {
+			foreach( $extra_fields as $fieldname => $field_data ) {
+
+				$this->_extra_fields_for_models[ $model_classname ][ $fieldname ][ 'name' ] = $fieldname;
+				foreach( $defaults as $attribute => $default_value ) {
+					if( ! isset( $this->_extra_fields_for_models[ $model_classname ][ $fieldname ][ $attribute ] ) ) {
+						$this->_extra_fields_for_models[ $model_classname ][ $fieldname ][ $attribute ] = $default_value;
+					}
+				}
+			}
+		}
 	}
 	/**
 	 * Handles requests to get all (or a filtered subset) of entities for a particular model
@@ -291,12 +332,12 @@ class EE_Models_Rest_Read_Controller {
 		foreach( $result as $field_name => $raw_field_value ) {
 			$field_obj = $model->field_settings_for($field_name);
 			$field_value = $field_obj->prepare_for_set_from_db( $raw_field_value );
-			if( EE_Models_Rest_Read_Controller::is_subclass_of_one(  $field_obj, EE_Models_Rest_Read_Controller::fields_ignored() ) ){
+			if( $this->is_subclass_of_one(  $field_obj, $this->fields_ignored() ) ){
 				unset( $result[ $field_name ] );
-			}elseif( EE_Models_Rest_Read_Controller::is_subclass_of_one(  $field_obj, EE_Models_Rest_Read_Controller::fields_raw() ) ){
+			}elseif( $this->is_subclass_of_one(  $field_obj, $this->fields_raw() ) ){
 				$result[ $field_name . '_raw' ] = $field_obj->prepare_for_get( $field_value );
 				$result[ $field_name ] = $field_obj->prepare_for_pretty_echoing( $field_value );
-			}elseif( EE_Models_Rest_Read_Controller::is_subclass_of_one( $field_obj, EE_Models_Rest_Read_Controller::fields_pretty() ) ){
+			}elseif( $this->is_subclass_of_one( $field_obj, $this->fields_pretty() ) ){
 				$result[ $field_name ] = $field_obj->prepare_for_get( $field_value );
 				$result[ $field_name . '_pretty' ] = $field_obj->prepare_for_pretty_echoing( $field_value );
 			}elseif( $field_obj instanceof EE_Datetime_Field ){
@@ -307,10 +348,18 @@ class EE_Models_Rest_Read_Controller {
 				$result[ $field_name ] = $value_prepared === INF ? EE_INF_IN_DB : $value_prepared;
 			}
 		}
+		if( $model instanceof EEM_CPT_Base ) {
+			$attachment = wp_get_attachment_image_src( get_post_thumbnail_id( $db_row[ $model->get_primary_key_field()->get_qualified_column() ] ), 'full' );
+			$result[ 'featured_image_url' ] = !empty( $attachment ) ? $attachment[ 0 ] : null;
+		}
 		//add links to related data
 		$result['meta']['links'] = array(
 			'self' => json_url( EED_REST_API::ee_api_namespace . Inflector::pluralize_and_lower( $model->get_this_model_name() ) . '/' . $result[ $model->primary_key_name() ]
 		) );
+
+		if( $model instanceof EEM_CPT_Base ) {
+			$result[ 'meta' ][ 'links' ][ 'self_wp_post' ] =  json_url( '/posts/' . $db_row[ $model->get_primary_key_field()->get_qualified_column() ] );
+		}
 
 		//filter fields if specified
 		$includes_for_this_model = $this->extract_includes_for_this_model( $include );
@@ -418,7 +467,7 @@ class EE_Models_Rest_Read_Controller {
 	public function create_model_query_params( $model, $filter ) {
 		$model_query_params = array( );
 		if ( isset( $filter[ 'where' ] ) ) {
-			$model_query_params[ 0 ] = EE_Models_Rest_Read_Controller::prepare_rest_query_params_key_for_models( $model, $filter[ 'where' ] );
+			$model_query_params[ 0 ] = $this->prepare_rest_query_params_key_for_models( $model, $filter[ 'where' ] );
 		}
 		if ( isset( $filter[ 'order_by' ] ) ) {
 			$order_by = $filter[ 'order_by' ];
@@ -429,8 +478,8 @@ class EE_Models_Rest_Read_Controller {
 		}
 		if( $order_by !== null ){
 			$model_query_params[ 'order_by' ] = is_array( $order_by ) ?
-				EE_Models_Rest_Read_Controller::prepare_rest_query_params_key_for_models( $model, $order_by ) :
-				EE_Models_Rest_Read_Controller::prepare_raw_field_for_use_in_models( $order_by );
+				$this->prepare_rest_query_params_key_for_models( $model, $order_by ) :
+				$this->prepare_raw_field_for_use_in_models( $order_by );
 		}
 		if ( isset( $filter[ 'group_by' ] ) ) {
 			$group_by = $filter[ 'group_by' ];
@@ -441,15 +490,15 @@ class EE_Models_Rest_Read_Controller {
 		}
 		if( $group_by !== null ){
 			if( is_array( $group_by ) ) {
-				$group_by = EE_Models_Rest_Read_Controller::prepare_rest_query_params_values_for_models( $model, $group_by );
+				$group_by = $this->prepare_rest_query_params_values_for_models( $model, $group_by );
 			}else{
-				$group_by = EE_Models_Rest_Read_Controller::prepare_raw_field_for_use_in_models( $models, $group_by );
+				$group_by = $this->prepare_raw_field_for_use_in_models( $models, $group_by );
 			}
 			$model_query_params[ 'group_by' ] = $group_by;
 		}
 		if ( isset( $filter[ 'having' ] ) ) {
 			//@todo: no good for permissions
-			$model_query_params[ 'having' ] = EE_Models_Rest_Read_Controller::prepare_rest_query_params_key_for_models( $model, $filter[ 'having' ] );
+			$model_query_params[ 'having' ] = $this->prepare_rest_query_params_key_for_models( $model, $filter[ 'having' ] );
 		}
 		if ( isset( $filter[ 'order' ] ) ) {
 			$model_query_params[ 'order' ] = $filter[ 'order' ];
@@ -491,9 +540,9 @@ class EE_Models_Rest_Read_Controller {
 	public function prepare_rest_query_params_key_for_models( $model,  $query_params ) {
 		$model_ready_query_params = array();
 		foreach( $query_params as $key => $value ) {
-			$key = EE_Models_Rest_Read_Controller::prepare_raw_field_for_use_in_models( $key );
+			$key = $this->prepare_raw_field_for_use_in_models( $key );
 			if( is_array( $value ) ) {
-				$model_ready_query_params[ $key ] = EE_Models_Rest_Read_Controller::prepare_rest_query_params_key_for_models( $model, $value );
+				$model_ready_query_params[ $key ] = $this->prepare_rest_query_params_key_for_models( $model, $value );
 			}else{
 				$model_ready_query_params[ $key ] = $value;
 			}
@@ -504,9 +553,9 @@ class EE_Models_Rest_Read_Controller {
 		$model_ready_query_params = array();
 		foreach( $query_params as $key => $value ) {
 			if( is_array( $value ) ) {
-				$model_ready_query_params[ $key ] = EE_Models_Rest_Read_Controller::prepare_rest_query_params_values_for_models( $model, $value );
+				$model_ready_query_params[ $key ] = $this->prepare_rest_query_params_values_for_models( $model, $value );
 			}else{
-				$model_ready_query_params[ $key ] = EE_Models_Rest_Read_Controller::prepare_raw_field_for_use_in_models( $value );;
+				$model_ready_query_params[ $key ] = $this->prepare_raw_field_for_use_in_models( $value );;
 			}
 		}
 		return $model_ready_query_params;
@@ -615,6 +664,20 @@ class EE_Models_Rest_Read_Controller {
 	 */
 	protected function _set_debug_info( $key, $info ){
 		$this->_debug_info[ $key ] = $info;
+	}
+
+	/**
+	 *
+	 * @param EEM_Base $model
+	 * @return array
+	 */
+	public function extra_fields_for_model( $model ) {
+		foreach( $this->_extra_fields_for_models as $a_model_name => $extra_fields ) {
+			if( is_subclass_of( $model, $a_model_name ) ) {
+				return $extra_fields;
+			}
+		}
+		return array();
 	}
 }
 

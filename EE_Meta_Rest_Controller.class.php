@@ -19,6 +19,7 @@ class EE_Meta_Rest_Controller {
 
 
 	public static function handle_request_models_meta() {
+		$read_controller = new EE_Models_Rest_Read_Controller();
 		$response = array();
 		foreach( EE_Registry::instance()->non_abstract_db_models as $model_name => $model_classname ){
 			$model = EE_Registry::instance()->load_model( $model_name );
@@ -46,10 +47,10 @@ class EE_Meta_Rest_Controller {
 					'table_column' => $field_obj->get_table_column(),
 					'always_available' => true
 				);
-				if( EE_Models_Rest_Read_Controller::is_subclass_of_one( $field_obj, EE_Models_Rest_Read_Controller::fields_ignored() ) ) {
+				if( $read_controller->is_subclass_of_one( $field_obj, $read_controller->fields_ignored() ) ) {
 					continue;
 				}
-				if( EE_Models_Rest_Read_Controller::is_subclass_of_one( $field_obj, EE_Models_Rest_Read_Controller::fields_raw() ) ) {
+				if( $read_controller->is_subclass_of_one( $field_obj, $read_controller->fields_raw() ) ) {
 					$raw_field_json = $field_json;
 					//specify that the non-raw version isn't queryable or editable
 					$field_json[ 'raw' ] = false;
@@ -60,7 +61,7 @@ class EE_Meta_Rest_Controller {
 					$raw_field_json[ 'nicename' ] = sprintf( __( '%1$s (%2$s)', 'event_espresso'), $field_json[ 'nicename' ], 'raw' );
 					$fields_json[ $raw_field_json[ 'name' ] ] = $raw_field_json;
 				}
-				if( EE_Models_Rest_Read_Controller::is_subclass_of_one( $field_obj, EE_Models_Rest_Read_Controller::fields_pretty() ) ) {
+				if( $read_controller->is_subclass_of_one( $field_obj, $read_controller->fields_pretty() ) ) {
 					$pretty_field_json = $field_json;
 					//specify that the non-raw version isn't queryable or editable
 					$pretty_field_json[ 'raw' ] = false;
@@ -73,6 +74,7 @@ class EE_Meta_Rest_Controller {
 				$fields_json[ $field_json[ 'name' ] ] = $field_json;
 
 			}
+			$fields_json = array_merge( $fields_json, $read_controller->extra_fields_for_model( $model ) );
 			$response[ $model_name ]['fields'] = apply_filters( 'FHEE__EE_Meta_Rest_Controller__handle_request_models_meta__fields', $fields_json, $model );
 			$relations_json = array();
 			foreach( $model->relation_settings()  as $relation_name => $relation_obj ) {
@@ -100,7 +102,7 @@ class EE_Meta_Rest_Controller {
 		$existing_index_info[ 'ee' ] = array(
 			'version' => EEM_System_Status::instance()->get_ee_version(),
 			'addons' => $addons,
-			'maintenance_mode' => EE_Maintenance_Mode::instance()->level() 
+			'maintenance_mode' => EE_Maintenance_Mode::instance()->level()
 		);
 		return $existing_index_info;
 	}
