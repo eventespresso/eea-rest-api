@@ -105,7 +105,8 @@ class EE_Models_Rest_Read_Controller_Test extends EE_UnitTestCase{
 				'status_pretty' => $event->get_pretty( 'status' ) ,
 				'EVT_default_registration_status_pretty' => $event->get_pretty( 'EVT_default_registration_status' ) ,
 				'featured_image_url' => null,
-				'EVT_timezone_string' => ''
+				'EVT_timezone_string' => '',
+				'link' => get_permalink( $event->ID() )
 			  ),
 				$result
 				);
