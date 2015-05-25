@@ -50,6 +50,12 @@ class EE_Models_Rest_Read_Controller {
 							'nicename' => __( 'Featured Image URL', 'event_espresso' ),
 							'datatype' => 'String',
 							'nullable' => true,
+						),
+						'link' => array(
+							'name' => 'link',
+							'nicename' => __( 'Link', 'event_espresso' ),
+							'datatype' => 'String',
+							'nullable' => true
 						)
 				)
 		));
@@ -351,6 +357,7 @@ class EE_Models_Rest_Read_Controller {
 		if( $model instanceof EEM_CPT_Base ) {
 			$attachment = wp_get_attachment_image_src( get_post_thumbnail_id( $db_row[ $model->get_primary_key_field()->get_qualified_column() ] ), 'full' );
 			$result[ 'featured_image_url' ] = !empty( $attachment ) ? $attachment[ 0 ] : null;
+			$result[ 'link' ] = get_permalink( $db_row[ $model->get_primary_key_field()->get_qualified_column() ] );
 		}
 		//add links to related data
 		$result['meta']['links'] = array(
