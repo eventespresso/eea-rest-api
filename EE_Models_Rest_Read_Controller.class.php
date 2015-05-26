@@ -594,6 +594,9 @@ class EE_Models_Rest_Read_Controller {
 	 * the fields for that model, with the model's name removed from each.
 	 */
 	public static function extract_includes_for_this_model( $include_string, $model_name = null ) {
+		if( is_array( $include_string ) ) {
+			$include_string = implode( ',', $include_string );
+		}
 		if( $include_string === '*' ) {
 			return array();
 		}
