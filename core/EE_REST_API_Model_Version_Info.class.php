@@ -51,6 +51,10 @@ class EE_REST_API_Model_Version_Info {
 	 */
 	protected $_cached_models_for_requested_version = null;
 
+	/**
+	 *
+	 * @var type
+	 */
 	protected $_cached_model_changes_between_requested_version_and_current = null;
 
 	public function __construct( $requested_version ) {
@@ -61,7 +65,7 @@ class EE_REST_API_Model_Version_Info {
 				//so we don't need to say how it's different from 4.5
 			),
 			'4.7' => array(
-				'Registration_Payment' => null,
+				'Registration_Payment' => EE_REST_API_Model_Version_Info::model_added,
 				'Registration' => array(
 					'REG_paid',
 				)
@@ -134,6 +138,20 @@ class EE_REST_API_Model_Version_Info {
 	 */
 	public function model_changes(){
 		return $this->_model_changes;
+	}
+
+	/**
+	 * Determines if this is a valid model name in the requested version
+	 * @param string $model_name eg 'Event'
+	 * @return boolean
+	 */
+	public function is_model_name_in_this_verison( $model_name ) {
+		$model_names = $this->get_all_models_for_requested_version();
+		if( isset( $model_names[ $model_name ] ) ) {
+			return true;
+		}else{
+			return false;
+		}
 	}
 }
 
