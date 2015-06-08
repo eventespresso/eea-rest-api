@@ -153,6 +153,58 @@ class EED_REST_API extends EED_Module {
 		return $meta_routes;
 	}
 
+	/**
+	 * Returns an array describing which versions of core support serving requests for.
+	 * Keys are core versions' major and minor version, and values are the
+	 * LOWEST requested version they can serve. Eg, 4.7 can serve requests for 4.6-like
+	 * data by just removing a few models and fields from the responses. However, 4.15 might remove
+	 * the answers table entirely, in which case it would be very difficult for
+	 * it to serve 4.6-style responses.
+	 * Versions of core that are missing from this array are unknowns.
+	 * previous ver
+	 * @return array
+	 */
+	public static function version_compatibilities() {
+		return  apply_filters( 'FHEE__EED_REST_API__version_compatibilities',
+				array(
+					'4.6' => '4.6',
+					'4.7' => '4.6',
+					'4.8' => '4.6'
+				));
+	}
+
+	/**
+	 * Using EED_REST_API::version_compatibilities(), determines what version of
+	 * EE the API can serve requests for. Eg, if we are on 4.15 of core, and
+	 * we can serve reqeusts from 4.12 or later, this will return array( '4.12', '4.13', '4.14', '4.15' ).
+	 * Although we might decide to ONLY include the latest in the index. The others might just be meta info somewhere.
+	 */
+	public static function versions_served() {
+		$version_compatibilities = EED_REST_API::version_compatibilities();
+		$versions_served = array();
+		if( $version_compatibilities[ EED_REST_API::core_version() ] ) {
+			$lowest_compatible_version = $version_compatibilities[ EED_REST_API::core_version() ];
+			//for each version of core we have ever served:
+			foreach( array_keys( EED_REST_API::version_compatibilities() ) as $possibly_served_version ) {
+				//if it's not above the current core version, and it's compatible with the current version of core
+				if( $possibly_served_version <= EED_REST_API::core_version() && $possibly_served_version >= $lowest_compatible_version ) {
+					$versions_served[] = $possibly_served_version;
+				}
+			}
+		}
+		return $versions_served;
+	}
+
+
+
+	/**
+	 * Gets the major and minor version of EE core's version string
+	 * @return string
+	 */
+	public static function core_version() {
+		return apply_filters( 'FHEE__EED_REST_API__core_version', implode('.', array_slice( explode( '.', espresso_version() ), 0, 2 ) ) );
+	}
+
 
 
 	/**
@@ -161,10 +213,6 @@ class EED_REST_API extends EED_Module {
 	 * @return EE_REST_API_Config
 	 */
 	public function config() {
-		// config settings are setup up individually for EED_Modules via the EE_Configurable class that all modules inherit from, so
-		// $this->config();  can be used anywhere to retrieve it's config, and:
-		// $this->_update_config( $EE_Config_Base_object ); can be used to supply an updated instance of it's config object
-		// to piggy back off of the config setup for the base EE_REST_API class, just use the following (note: updates would have to occur from within that class)
 		return EE_Registry::instance()->addons->EE_REST_API->config();
 	}
 

@@ -37,7 +37,6 @@ Class  EE_REST_API extends EE_Addon {
 				'config_class' 			=> 'EE_REST_API_Config',
 				'config_name' 		=> 'EE_REST_API',
 				'autoloader_paths' => array(
-					'EE_REST_API' 						=> EE_REST_API_PATH . 'EE_REST_API.class.php',
 					'EE_REST_API_Config' 			=> EE_REST_API_PATH . 'EE_REST_API_Config.php',
 					'Rest_Api_Admin_Page' 		=> EE_REST_API_ADMIN . 'Rest_Api_Admin_Page.core.php',
 					'Rest_Api_Admin_Page_Init' => EE_REST_API_ADMIN . 'Rest_Api_Admin_Page_Init.core.php',
@@ -45,7 +44,8 @@ Class  EE_REST_API extends EE_Addon {
 					'EE_Models_Rest_Read_Controller' => EE_REST_API_PATH . 'EE_Models_Rest_Read_Controller.class.php',
 					'EE_Config_Rest_Read_Controller' => EE_REST_API_PATH . 'EE_Config_Rest_Read_Controller.class.php',
 					'EE_Meta_Rest_Controller' => EE_REST_API_PATH . 'EE_Meta_Rest_Controller.class.php',
-					'EE_REST_API_Capabilities' => EE_REST_API_PATH . 'core/EE_REST_API_Capabilities.class.php'
+					'EE_REST_API_Capabilities' => EE_REST_API_PATH . 'core/EE_REST_API_Capabilities.class.php',
+					'EE_REST_API_Model_Version_Info' => EE_REST_API_PATH . 'core/EE_REST_API_Model_Version_Info.class.php'
 				),
 
 				'module_paths' 		=> array( EE_REST_API_PATH . 'EED_REST_API.module.php' ),
