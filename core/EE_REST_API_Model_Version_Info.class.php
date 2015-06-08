@@ -77,27 +77,6 @@ class EE_REST_API_Model_Version_Info {
 	}
 
 	/**
-	 * Takes into account the requested version, and the current version, and
-	 * what changed between the two, and tries to return
-	 */
-	public function get_all_models_for_requested_version() {
-		if( $this->_cached_models_for_requested_version === null ) {
-			$all_models_in_current_version = EE_Registry::instance()->non_abstract_db_models;
-			$current_version = EED_REST_API::core_version();
-			$requested_version = $this->requested_version();
-			foreach( $this->get_all_model_changes_between_requested_version_and_current() as $version => $models_changed ) {
-				foreach( $models_changed as $model_name => $new_indicator_or_fields_added ) {
-					if( $new_indicator_or_fields_added === EE_REST_API_Model_Version_Info::model_added ) {
-						unset( $all_models_in_current_version[ $model_name ] );
-					}
-				}
-			}
-			$this->_cached_models_for_requested_version = $all_models_in_current_version;
-		}
-		return $this->_cached_models_for_requested_version;
-	}
-
-	/**
 	 * Returns a slice of EE_REST_API_Model_Version_Info::model_changes()'s array
 	 * indicating exactly what changes happened between the current core version,
 	 * and the version requested
@@ -141,7 +120,31 @@ class EE_REST_API_Model_Version_Info {
 	}
 
 	/**
-	 * Determines if this is a valid model name in the requested version
+	 * Takes into account the requested version, and the current version, and
+	 * what changed between the two, and tries to return.
+	 * Analogous to EE_Registry::instance()->non_abstract_db_models
+	 * @return array keys are model names, values are their classname
+	 */
+	public function get_all_models_for_requested_version() {
+		if( $this->_cached_models_for_requested_version === null ) {
+			$all_models_in_current_version = EE_Registry::instance()->non_abstract_db_models;
+			$current_version = EED_REST_API::core_version();
+			$requested_version = $this->requested_version();
+			foreach( $this->get_all_model_changes_between_requested_version_and_current() as $version => $models_changed ) {
+				foreach( $models_changed as $model_name => $new_indicator_or_fields_added ) {
+					if( $new_indicator_or_fields_added === EE_REST_API_Model_Version_Info::model_added ) {
+						unset( $all_models_in_current_version[ $model_name ] );
+					}
+				}
+			}
+			$this->_cached_models_for_requested_version = $all_models_in_current_version;
+		}
+		return $this->_cached_models_for_requested_version;
+	}
+	/**
+	 * Determines if this is a valid model name in the requested version.
+	 * Similar to EE_Registry::instance()->is_model_name(), but takes the requested
+	 * version's models into account
 	 * @param string $model_name eg 'Event'
 	 * @return boolean
 	 */
@@ -151,6 +154,21 @@ class EE_REST_API_Model_Version_Info {
 			return true;
 		}else{
 			return false;
+		}
+	}
+
+	/**
+	 * Wrapper for EE_Registry::instance()->load_model(), but takes the requested
+	 * version's models into account
+	 * @param string $model_name
+	 * @return EEM_Base
+	 * @throws EE_Error
+	 */
+	public function load_model( $model_name ) {
+		if( $this->is_model_name_in_this_verison(  $model_name ) ) {
+			return EE_Registry::instance()->load_model( $model_name );
+		}else{
+			throw new EE_Error( sprintf( __( 'Cannot load model "%1$s" because it does not exist in version %2$s of Event Espresso', 'event_espresso' ), $model_name, $this->requested_version() ) );
 		}
 	}
 }

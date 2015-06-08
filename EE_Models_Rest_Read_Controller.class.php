@@ -110,7 +110,7 @@ class EE_Models_Rest_Read_Controller {
 				}
 				return $controller->send_response(
 						$controller->get_entities_from_model(
-								EE_Registry::instance()->load_model( $model_name_singular ),
+								$controller->get_model_version_info()->load_model( $model_name_singular ),
 								$filter,
 								$include ) );
 			} else {
@@ -145,7 +145,7 @@ class EE_Models_Rest_Read_Controller {
 				}
 				return $controller->send_response(
 						$controller->get_entity_from_model(
-								EE_Registry::instance()->load_model( $model_name_singular ),
+								$controller->get_model_version_info()->load_model( $model_name_singular ),
 								$id,
 								$include,
 								$controller->validate_context( isset( $filter[ 'caps' ] ) ? $filter[ 'caps' ] : EEM_Base::caps_read ) ) );
@@ -180,7 +180,7 @@ class EE_Models_Rest_Read_Controller {
 				if ( ! $controller->get_model_version_info()->is_model_name_in_this_verison( $main_model_name_singular ) ) {
 					return $controller->send_response( new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $main_model_name_singular ) ) );
 				}
-				$main_model = EE_Registry::instance()->load_model( $main_model_name_singular );
+				$main_model = $controller->get_model_version_info()->load_model( $main_model_name_singular );
 				$related_model_name_maybe_plural = $matches[ 4 ];
 				$related_model_name_singular = EEH_Inflector::singularize_and_upper( $related_model_name_maybe_plural );
 				if ( ! $controller->get_model_version_info()->is_model_name_in_this_verison( $related_model_name_singular ) ) {
