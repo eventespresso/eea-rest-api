@@ -28,8 +28,8 @@ if ( !defined( 'EVENT_ESPRESSO_VERSION' ) ) {
  */
 class EED_REST_API extends EED_Module {
 
-	const ee_api_namespace = '/ee/v4.6/';
-	const ee_api_namespace_for_regex = '\/ee\/v4.6\/';
+	const ee_api_namespace = '/ee/v';
+	const ee_api_namespace_for_regex = '\/ee\/v([^/]*)\/';
 	const saved_routes_option_names = 'ee_routes';
 
 	/**
@@ -109,25 +109,33 @@ class EED_REST_API extends EED_Module {
 		//let's not bother having endpoints for extra metas
 		unset($models_to_register['Extra_Meta']);
 		$model_routes = array( );
-		foreach ( $models_to_register as $model_name => $model_classname ) {
-			//yes we could jsut register one route for ALL models, but then they wouldn't show up in the index
-			$model_routes[ self::ee_api_namespace . Inflector::pluralize_and_lower( $model_name ) ] = array(
-				array( array( 'EE_Models_Rest_Read_Controller', 'handle_request_get_all' ), WP_JSON_Server::READABLE ),
-					//@todo: also handle POST, PUT
-			);
-			$model_routes[ self::ee_api_namespace . Inflector::pluralize_and_lower( $model_name ) . '/(?P<id>\d+)' ] = array(
-				array( array( 'EE_Models_Rest_Read_Controller', 'handle_request_get_one' ), WP_JSON_Server::READABLE ),
-					//@todo: also handle PUT, DELETE,
-			);
-			$model = EE_Registry::instance()->load_model( $model_classname );
-			foreach ( $model->relation_settings() as $relation_name => $relation_obj ) {
-				$related_model_name_endpoint_part = EE_Models_Rest_Read_Controller::get_related_entity_name( $relation_name, $relation_obj );
-				$model_routes[ self::ee_api_namespace . Inflector::pluralize_and_lower( $model_name ) . '/(?P<id>\d+)/' . $related_model_name_endpoint_part ] = array(
-					array( array( 'EE_Models_Rest_Read_Controller', 'handle_request_get_related' ), WP_JSON_Server::READABLE )
+		foreach( self::versions_served() as $version => $hidden_endpoint ) {
+			if( $hidden_endpoint ) {
+				$bitmask = WP_JSON_Server::READABLE | WP_JSON_Server::HIDDEN_ENDPOINT;
+			}else{
+				$bitmask = WP_JSON_Server::READABLE;
+			}
+			foreach ( $models_to_register as $model_name => $model_classname ) {
+				//yes we could jsut register one route for ALL models, but then they wouldn't show up in the index
+				$model_routes[ self::ee_api_namespace . $version . '/' . Inflector::pluralize_and_lower( $model_name ) ] = array(
+					array( array( 'EE_Models_Rest_Read_Controller', 'handle_request_get_all' ), WP_JSON_Server::READABLE ),
 						//@todo: also handle POST, PUT
 				);
+				$model_routes[ self::ee_api_namespace . $version . '/' .Inflector::pluralize_and_lower( $model_name ) . '/(?P<id>\d+)' ] = array(
+					array( array( 'EE_Models_Rest_Read_Controller', 'handle_request_get_one' ), WP_JSON_Server::READABLE ),
+						//@todo: also handle PUT, DELETE,
+				);
+				$model = EE_Registry::instance()->load_model( $model_classname );
+				foreach ( $model->relation_settings() as $relation_name => $relation_obj ) {
+					$related_model_name_endpoint_part = EE_Models_Rest_Read_Controller::get_related_entity_name( $relation_name, $relation_obj );
+					$model_routes[ self::ee_api_namespace . $version . '/' . Inflector::pluralize_and_lower( $model_name ) . '/(?P<id>\d+)/' . $related_model_name_endpoint_part ] = array(
+						array( array( 'EE_Models_Rest_Read_Controller', 'handle_request_get_related' ), WP_JSON_Server::READABLE )
+							//@todo: also handle POST, PUT
+					);
+				}
 			}
 		}
+
 		return $model_routes;
 	}
 
@@ -136,9 +144,16 @@ class EED_REST_API extends EED_Module {
 	 * @return array
 	 */
 	protected function _register_config_routes() {
-		$config_routes[ self::ee_api_namespace . 'config' ] = array(
-				array( array( 'EE_Config_Rest_Read_Controller', 'handle_request' ), WP_JSON_Server::READABLE ),
-			);
+		foreach( self::versions_served() as $version => $hidden_endpoint ) {
+			if( $hidden_endpoint ) {
+				$bitmask = WP_JSON_Server::READABLE | WP_JSON_Server::HIDDEN_ENDPOINT;
+			}else{
+				$bitmask = WP_JSON_Server::READABLE;
+			}
+			$config_routes[ self::ee_api_namespace . $version . '/config' ] = array(
+					array( array( 'EE_Config_Rest_Read_Controller', 'handle_request' ), $bitmask ),
+				);
+		}
 		return $config_routes;
 	}
 
@@ -147,9 +162,16 @@ class EED_REST_API extends EED_Module {
 	 * @return array
 	 */
 	protected function _register_meta_routes() {
-		$meta_routes[ self::ee_api_namespace . 'resources' ] = array(
-			array( array( 'EE_Meta_Rest_Controller', 'handle_request_models_meta' ), WP_JSON_Server::READABLE )
-		);
+		foreach( self::versions_served() as $version => $hidden_endpoint ) {
+			if( $hidden_endpoint ) {
+				$bitmask = WP_JSON_Server::READABLE | WP_JSON_Server::HIDDEN_ENDPOINT;
+			}else{
+				$bitmask = WP_JSON_Server::READABLE;
+			}
+			$meta_routes[ self::ee_api_namespace . $version . '/resources' ] = array(
+				array( array( 'EE_Meta_Rest_Controller', 'handle_request_models_meta' ), WP_JSON_Server::READABLE )
+			);
+		}
 		return $meta_routes;
 	}
 
@@ -177,7 +199,9 @@ class EED_REST_API extends EED_Module {
 	 * Using EED_REST_API::version_compatibilities(), determines what version of
 	 * EE the API can serve requests for. Eg, if we are on 4.15 of core, and
 	 * we can serve reqeusts from 4.12 or later, this will return array( '4.12', '4.13', '4.14', '4.15' ).
-	 * Although we might decide to ONLY include the latest in the index. The others might just be meta info somewhere.
+	 * We also indicate whether or not this version should be put in the index or not
+	 * @return array keys are API version numbers (just major and minor numbers), and values
+	 * are whether or not they should be hidden
 	 */
 	public static function versions_served() {
 		$version_compatibilities = EED_REST_API::version_compatibilities();
@@ -187,8 +211,10 @@ class EED_REST_API extends EED_Module {
 			//for each version of core we have ever served:
 			foreach( array_keys( EED_REST_API::version_compatibilities() ) as $possibly_served_version ) {
 				//if it's not above the current core version, and it's compatible with the current version of core
-				if( $possibly_served_version <= EED_REST_API::core_version() && $possibly_served_version >= $lowest_compatible_version ) {
-					$versions_served[] = $possibly_served_version;
+				if( $possibly_served_version < EED_REST_API::core_version() && $possibly_served_version >= $lowest_compatible_version ) {
+					$versions_served[ $possibly_served_version ] = true;
+				}elseif( $possibly_served_version == EED_REST_API::core_version() ) {
+					$versions_served[ $possibly_served_version ] = false;
 				}
 			}
 		}

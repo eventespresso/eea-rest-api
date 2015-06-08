@@ -100,8 +100,9 @@ class EE_Models_Rest_Read_Controller {
 		try{
 			$regex = '~' . EED_REST_API::ee_api_namespace_for_regex . '(.*)~';
 			$success = preg_match( $regex, $_path, $matches );
-			if ( is_array( $matches ) && isset( $matches[ 1 ] ) ) {
-				$model_name_plural = $matches[ 1 ];
+			if ( is_array( $matches ) && isset( $matches[ 1 ] ) && isset( $matches[ 1 ] ) ) {
+				$requested_version = $matches[ 1 ];
+				$model_name_plural = $matches[ 2 ];
 				$model_name_singular = EEH_Inflector::singularize_and_upper( $model_name_plural );
 				if ( ! EE_Registry::instance()->is_model_name( $model_name_singular ) ) {
 					return $this->send_response( new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) ) );
@@ -133,8 +134,9 @@ class EE_Models_Rest_Read_Controller {
 			$inflector = new Inflector();
 			$regex = '~' . EED_REST_API::ee_api_namespace_for_regex . '(.*)/(.*)~';
 			$success = preg_match( $regex, $_path, $matches );
-			if ( $success && is_array( $matches ) && isset( $matches[ 1 ] ) ) {
-				$model_name_plural = $matches[ 1 ];
+			if ( $success && is_array( $matches ) && isset( $matches[ 1 ] ) && isset( $matches[ 2 ] ) ) {
+				$requested_version = $matches[ 1 ];
+				$model_name_plural = $matches[ 2 ];
 				$model_name_singular = EEH_Inflector::singularize_and_upper( $model_name_plural );
 				if ( ! EE_Registry::instance()->is_model_name( $model_name_singular ) ) {
 					return $this->send_response( new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) ) );
@@ -168,17 +170,18 @@ class EE_Models_Rest_Read_Controller {
 		try{
 			$regex = '~' . EED_REST_API::ee_api_namespace_for_regex . '(.*)/(.*)/(.*)~';
 			$success = preg_match( $regex, $_path, $matches );
-			if ( is_array( $matches ) && isset( $matches[ 1 ] ) && isset( $matches[3] ) ) {
-				$main_model_name_plural = $matches[ 1 ];
+			if ( is_array( $matches ) && isset( $matches[ 1 ] ) && isset( $matches[ 2 ] ) &&  isset( $matches[ 4 ] ) ) {
+				$requested_version = $matches[ 1 ];
+				$main_model_name_plural = $matches[ 2 ];
 				$main_model_name_singular = EEH_Inflector::singularize_and_upper( $main_model_name_plural );
 				if ( ! EE_Registry::instance()->is_model_name( $main_model_name_singular ) ) {
-					return $this->send_response( new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $main_model_name_singular ) ) );
+					return $controller->send_response( new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $main_model_name_singular ) ) );
 				}
 				$main_model = EE_Registry::instance()->load_model( $main_model_name_singular );
-				$related_model_name_maybe_plural = $matches[ 3 ];
+				$related_model_name_maybe_plural = $matches[ 4 ];
 				$related_model_name_singular = EEH_Inflector::singularize_and_upper( $related_model_name_maybe_plural );
 				if ( ! EE_Registry::instance()->is_model_name( $related_model_name_singular ) ) {
-					return $this->send_response( new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $related_model_name_singular ) ) );
+					return $controller->send_response( new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $related_model_name_singular ) ) );
 				}
 
 				return $controller->send_response(
