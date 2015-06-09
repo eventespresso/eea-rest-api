@@ -341,6 +341,7 @@ class EE_Models_Rest_Read_Controller {
 	 */
 	public function create_entity_from_wpdb_result( $model, $db_row, $include, $context ) {
 		$result = $model->deduce_fields_n_values_from_cols_n_values( $db_row );
+		$result = array_intersect_key( $result, $this->get_model_version_info()->fields_on_model_in_this_version( $model ) );
 		foreach( $result as $field_name => $raw_field_value ) {
 			$field_obj = $model->field_settings_for($field_name);
 			$field_value = $field_obj->prepare_for_set_from_db( $raw_field_value );
