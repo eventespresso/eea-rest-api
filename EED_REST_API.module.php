@@ -118,18 +118,18 @@ class EED_REST_API extends EED_Module {
 			foreach ( $models_to_register as $model_name => $model_classname ) {
 				//yes we could jsut register one route for ALL models, but then they wouldn't show up in the index
 				$model_routes[ self::ee_api_namespace . $version . '/' . Inflector::pluralize_and_lower( $model_name ) ] = array(
-					array( array( 'EE_Models_Rest_Read_Controller', 'handle_request_get_all' ), WP_JSON_Server::READABLE ),
+					array( array( 'EE_Models_Rest_Read_Controller', 'handle_request_get_all' ), $bitmask ),
 						//@todo: also handle POST, PUT
 				);
 				$model_routes[ self::ee_api_namespace . $version . '/' .Inflector::pluralize_and_lower( $model_name ) . '/(?P<id>\d+)' ] = array(
-					array( array( 'EE_Models_Rest_Read_Controller', 'handle_request_get_one' ), WP_JSON_Server::READABLE ),
+					array( array( 'EE_Models_Rest_Read_Controller', 'handle_request_get_one' ), $bitmask ),
 						//@todo: also handle PUT, DELETE,
 				);
 				$model = EE_Registry::instance()->load_model( $model_classname );
 				foreach ( $model->relation_settings() as $relation_name => $relation_obj ) {
 					$related_model_name_endpoint_part = EE_Models_Rest_Read_Controller::get_related_entity_name( $relation_name, $relation_obj );
 					$model_routes[ self::ee_api_namespace . $version . '/' . Inflector::pluralize_and_lower( $model_name ) . '/(?P<id>\d+)/' . $related_model_name_endpoint_part ] = array(
-						array( array( 'EE_Models_Rest_Read_Controller', 'handle_request_get_related' ), WP_JSON_Server::READABLE )
+						array( array( 'EE_Models_Rest_Read_Controller', 'handle_request_get_related' ), $bitmask )
 							//@todo: also handle POST, PUT
 					);
 				}
@@ -147,9 +147,11 @@ class EED_REST_API extends EED_Module {
 		foreach( self::versions_served() as $version => $hidden_endpoint ) {
 			if( $hidden_endpoint ) {
 				$bitmask = WP_JSON_Server::READABLE | WP_JSON_Server::HIDDEN_ENDPOINT;
+
 			}else{
 				$bitmask = WP_JSON_Server::READABLE;
 			}
+
 			$config_routes[ self::ee_api_namespace . $version . '/config' ] = array(
 					array( array( 'EE_Config_Rest_Read_Controller', 'handle_request' ), $bitmask ),
 				);
@@ -169,7 +171,7 @@ class EED_REST_API extends EED_Module {
 				$bitmask = WP_JSON_Server::READABLE;
 			}
 			$meta_routes[ self::ee_api_namespace . $version . '/resources' ] = array(
-				array( array( 'EE_Meta_Rest_Controller', 'handle_request_models_meta' ), WP_JSON_Server::READABLE )
+				array( array( 'EE_Meta_Rest_Controller', 'handle_request_models_meta' ), $bitmask )
 			);
 		}
 		return $meta_routes;
