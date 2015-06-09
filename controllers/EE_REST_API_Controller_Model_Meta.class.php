@@ -24,7 +24,7 @@ class EE_REST_API_Controller_Model_Meta extends EE_REST_API_Controller_Model_Bas
 			$success = preg_match( $regex, $_path, $matches );
 			if ( $success && is_array( $matches ) && isset( $matches[ 1 ] )) {
 				$controller->set_requested_version( $matches[ 1 ] );
-				return $controller->_get_models_metadata_entity();
+				return $controller->send_response( $controller->_get_models_metadata_entity() );
 			} else {
 				return $controller->send_response( new WP_Error( 'endpoint_parsing_error', __( 'We could not parse the URL. Please contact event espresso support', 'event_espresso' ) ) );
 			}
@@ -34,6 +34,10 @@ class EE_REST_API_Controller_Model_Meta extends EE_REST_API_Controller_Model_Bas
 
 	}
 
+	/*
+	 * Gets the model metadata resource entity
+	 * @return array for JSON response, describing all the models available in teh requested version
+	 */
 	protected function _get_models_metadata_entity(){
 		$response = array();
 		foreach( $this->get_model_version_info()->models_for_requested_version() as $model_name => $model_classname ){
@@ -62,10 +66,10 @@ class EE_REST_API_Controller_Model_Meta extends EE_REST_API_Controller_Model_Bas
 					'table_column' => $field_obj->get_table_column(),
 					'always_available' => true
 				);
-				if( $this->is_subclass_of_one( $field_obj, $read_controller->get_model_version_info()->fields_ignored() ) ) {
+				if( $this->get_model_version_info()->field_is_ignored( $field_obj ) ) {
 					continue;
 				}
-				if( $read_controller->is_subclass_of_one( $field_obj, $read_controller->get_model_version_info()->fields_raw() ) ) {
+				if( $this->get_model_version_info()->field_is_raw( $field_obj ) ) {
 					$raw_field_json = $field_json;
 					//specify that the non-raw version isn't queryable or editable
 					$field_json[ 'raw' ] = false;
@@ -76,7 +80,7 @@ class EE_REST_API_Controller_Model_Meta extends EE_REST_API_Controller_Model_Bas
 					$raw_field_json[ 'nicename' ] = sprintf( __( '%1$s (%2$s)', 'event_espresso'), $field_json[ 'nicename' ], 'raw' );
 					$fields_json[ $raw_field_json[ 'name' ] ] = $raw_field_json;
 				}
-				if( $read_controller->is_subclass_of_one( $field_obj, $read_controller->get_model_version_info()->fields_pretty() ) ) {
+				if( $this->get_model_version_info()->field_is_pretty( $field_obj ) ) {
 					$pretty_field_json = $field_json;
 					//specify that the non-raw version isn't queryable or editable
 					$pretty_field_json[ 'raw' ] = false;
@@ -89,7 +93,7 @@ class EE_REST_API_Controller_Model_Meta extends EE_REST_API_Controller_Model_Bas
 				$fields_json[ $field_json[ 'name' ] ] = $field_json;
 
 			}
-			$fields_json = array_merge( $fields_json, $read_controller->extra_fields_for_model( $model ) );
+			$fields_json = array_merge( $fields_json, $this->get_model_version_info()->extra_resource_properties_for_model( $model ) );
 			$response[ $model_name ]['fields'] = apply_filters( 'FHEE__EE_REST_API_Controller_Model_Meta__handle_request_models_meta__fields', $fields_json, $model );
 			$relations_json = array();
 			foreach( $model->relation_settings()  as $relation_name => $relation_obj ) {
@@ -101,6 +105,7 @@ class EE_REST_API_Controller_Model_Meta extends EE_REST_API_Controller_Model_Bas
 			}
 			$response[ $model_name ][ 'relations' ] = apply_filters( 'FHEE__EE_REST_API_Controller_Model_Meta__handle_request_models_meta__relations', $relations_json, $model );
 		}
+		return $response;
 	}
 
 	public static function filter_ee_metadata_into_index( $existing_index_info ) {

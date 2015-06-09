@@ -38,6 +38,16 @@ class EE_REST_API_Model_Version_Info {
 
 	/**
 	 *
+	 * @var array top-level keys are versio numbers, next-level keys are model CLASSNAMES (even parent classnames),
+	 * and next-level keys are extra resource properties to attach to those models' resources, and
+	 * next-level key-value pairs, where the keys are:'raw', 'type', 'nullable', 'table_alias', 'table_column',  'always_available'
+	 */
+	protected $_resource_changes = array(
+
+	);
+
+	/**
+	 *
 	 * @var string indicating what version of the API was requested
 	 * (eg although core might be at version 4.8.11, they may have sent a request
 	 * for 4.6)
@@ -56,6 +66,12 @@ class EE_REST_API_Model_Version_Info {
 	 * @var array
 	 */
 	protected $_cached_model_changes_between_requested_version_and_current = null;
+
+	/**
+	 *
+	 * @var array
+	 */
+	protected $_cached_resource_changes_between_requested_version_and_current = null;
 
 	/**
 	 * 2d array where top-level keys are model names, 2nd-level keys are field names
@@ -82,6 +98,48 @@ class EE_REST_API_Model_Version_Info {
 				//didn't actually make any changes to the models, just how line items are organized
 			)
 		);
+
+		//setup data for "extra" fields added onto resources which don't actually exist on models
+		$this->_resource_changes = apply_filters(
+				'FHEE__EE_REST_API_Model_Version_Info___construct__extra_resource_properties_for_models',
+				array( '4.6' =>
+					array(
+						'EEM_CPT_Base' => array(
+							'featured_image_url' => array(
+								'name' => 'featured_image_url',
+								'nicename' => __( 'Featured Image URL', 'event_espresso' ),
+								'datatype' => 'String',
+								'nullable' => true,
+							),
+							'link' => array(
+								'name' => 'link',
+								'nicename' => __( 'Link', 'event_espresso' ),
+								'datatype' => 'String',
+								'nullable' => true
+							)
+					)
+				),
+		));
+		$defaults = array(
+			'raw' => false,
+			'type' => 'N/A',
+			'nullable' => true,
+			'table_alias' => 'N/A',
+			'table_column' => 'N/A',
+			'always_available' => true,
+		);
+		foreach( $this->_resource_changes as $version => $model_classnames ) {
+			foreach( $model_classnames as $model_classname => $extra_fields ) {
+				foreach( $extra_fields as $fieldname => $field_data ) {
+					$this->_resource_changes[ $model_classname ][ $fieldname ][ 'name' ] = $fieldname;
+					foreach( $defaults as $attribute => $default_value ) {
+						if( ! isset( $this->_resource_changes[ $model_classname ][ $fieldname ][ $attribute ] ) ) {
+							$this->_resource_changes[ $model_classname ][ $fieldname ][ $attribute ] = $default_value;
+						}
+					}
+				}
+			}
+		}
 	}
 
 	/**
@@ -103,6 +161,27 @@ class EE_REST_API_Model_Version_Info {
 			$this->_cached_model_changes_between_requested_version_and_current = $model_changes;
 		}
 		return $this->_cached_model_changes_between_requested_version_and_current;
+	}
+
+	/**
+	 * Returns a slice of EE_REST_API_Model_Version_Info::model_changes()'s array
+	 * indicating exactly what changes happened between the current core version,
+	 * and the version requested
+	 * @param type $requested_version
+	 * @param type $current_version
+	 * @return array
+	 */
+	public function resource_changes_between_requested_version_and_current() {
+		if( $this->_cached_resource_changes_between_requested_version_and_current === null ) {
+			$resouce_changes = array();
+			foreach( $this->resource_changes() as $version => $model_classnames ) {
+				if( $version <= EED_REST_API::core_version()  && $version > $this->requested_version()  ) {
+					$resouce_changes[ $version ] = $model_classnames;
+				}
+			}
+			$this->_cached_resource_changes_between_requested_version_and_current = $resouce_changes;
+		}
+		return $this->_cached_resource_changes_between_requested_version_and_current;
 	}
 
 	/**
@@ -250,7 +329,7 @@ class EE_REST_API_Model_Version_Info {
 	 * @return boolean
 	 */
 	public function field_is_raw( $field_obj ){
-		 return $this->is_subclass_of_one( $field_obj, $this->get_model_version_info()->fields_raw() );
+		 return $this->is_subclass_of_one( $field_obj, $this->fields_raw() );
 	}
 
 	/**
@@ -261,6 +340,41 @@ class EE_REST_API_Model_Version_Info {
 	 */
 	public function fields_pretty() {
 		return apply_filters( 'FHEE__EE_REST_API_Controller_Model_Read__fields_pretty', array ( 'EE_Enum_Integer_Field', 'EE_Enum_Text_Field', 'EE_Money_Field' ) );
+	}
+
+	/**
+	 * If this field one that has a pretty equivalent
+	 * @param EE_Model_Field_Base
+	 * @return boolean
+	 */
+	public function field_is_pretty( $field_obj ){
+		 return $this->is_subclass_of_one( $field_obj, $this->fields_pretty() );
+	}
+
+	/**
+	 * Returns an array describin what extra API resource properties have been added through the versions
+	 * @return array @see $this->_extra_resource_properties_for_models
+	 */
+	public function resource_changes() {
+		return $this->_resource_changes;
+	}
+
+	/**
+	 * Returns an array where keys are extra resouce properties in this version of the API,
+	 * and values are key-value pairs describing the new properties. @see EE_REST_API_Model_Version::_resource_changes
+	 * @param EEM_Base $model
+	 * @return array
+	 */
+	public function extra_resource_properties_for_model( $model ) {
+		$extra_properties = array();
+		foreach( $this->resource_changes_between_requested_version_and_current() as $version => $model_classnames ) {
+			foreach( $model_classnames as $model_classname => $properties_added_in_this_version ) {
+				if( is_subclass_of( $model, $a_model_name ) ) {
+					$extra_properties = array_merge( $extra_properties, $properties_added_in_this_version );
+				}
+			}
+		}
+		return $extra_properties;
 	}
 
 }

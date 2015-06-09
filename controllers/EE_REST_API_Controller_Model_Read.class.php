@@ -18,57 +18,11 @@ class EE_REST_API_Controller_Model_Read extends EE_REST_API_Controller_Model_Bas
 
 
 
-	/**
-	 *
-	 * @var array top-level keys are model classnames; even
-	 */
-	protected $_extra_fields_for_models = array(
 
-	);
 
 	public function __construct() {
-		$api_config = EE_Config::instance()->get_config( 'addons', 'EE_REST_API', 'EE_REST_API_Config' );
-		$this->_debug_mode = $api_config->api_debug_mode;
+		parent::__construct();
 		EE_Registry::instance()->load_helper( 'Inflector' );
-
-		//setup data for "extra" fields added onto resources which don't actually exist on models
-		$this->_extra_fields_for_models = apply_filters(
-				'FHEE__EE_REST_API_Controller_Model_Read___construct__extra_fields_for_models',
-				array(
-					'EEM_CPT_Base' => array(
-						'featured_image_url' => array(
-							'name' => 'featured_image_url',
-							'nicename' => __( 'Featured Image URL', 'event_espresso' ),
-							'datatype' => 'String',
-							'nullable' => true,
-						),
-						'link' => array(
-							'name' => 'link',
-							'nicename' => __( 'Link', 'event_espresso' ),
-							'datatype' => 'String',
-							'nullable' => true
-						)
-				)
-		));
-		$defaults = array(
-			'raw' => false,
-			'type' => 'N/A',
-			'nullable' => true,
-			'table_alias' => 'N/A',
-			'table_column' => 'N/A',
-			'always_available' => true,
-		);
-		foreach( $this->_extra_fields_for_models as $model_classname => $extra_fields ) {
-			foreach( $extra_fields as $fieldname => $field_data ) {
-
-				$this->_extra_fields_for_models[ $model_classname ][ $fieldname ][ 'name' ] = $fieldname;
-				foreach( $defaults as $attribute => $default_value ) {
-					if( ! isset( $this->_extra_fields_for_models[ $model_classname ][ $fieldname ][ $attribute ] ) ) {
-						$this->_extra_fields_for_models[ $model_classname ][ $fieldname ][ $attribute ] = $default_value;
-					}
-				}
-			}
-		}
 	}
 	/**
 	 * Handles requests to get all (or a filtered subset) of entities for a particular model
@@ -601,21 +555,6 @@ class EE_REST_API_Controller_Model_Read extends EE_REST_API_Controller_Model_Bas
 	protected function _set_debug_info( $key, $info ){
 		$this->_debug_info[ $key ] = $info;
 	}
-
-	/**
-	 *
-	 * @param EEM_Base $model
-	 * @return array
-	 */
-	public function extra_fields_for_model( $model ) {
-		foreach( $this->_extra_fields_for_models as $a_model_name => $extra_fields ) {
-			if( is_subclass_of( $model, $a_model_name ) ) {
-				return $extra_fields;
-			}
-		}
-		return array();
-	}
-
 }
 
 

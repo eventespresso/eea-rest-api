@@ -26,12 +26,17 @@ class EE_REST_API_Controller_Base {
 	 * @var boolean
 	 */
 	protected $_debug_mode = false;
-	
+
 	/**
 	 * Indicates the version that was requested
 	 * @var string
 	 */
 	protected $_requested_version;
+
+	public function __construct() { 
+		$api_config = EE_Config::instance()->get_config( 'addons', 'EE_REST_API', 'EE_REST_API_Config' );
+		$this->_debug_mode = $api_config->api_debug_mode;
+	}
 
 
 	/**
