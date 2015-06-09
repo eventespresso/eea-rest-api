@@ -120,7 +120,8 @@ class EE_REST_API_Controller_Model_Meta extends EE_REST_API_Controller_Model_Bas
 		$existing_index_info[ 'ee' ] = array(
 			'version' => EEM_System_Status::instance()->get_ee_version(),
 			'addons' => $addons,
-			'maintenance_mode' => EE_Maintenance_Mode::instance()->level()
+			'maintenance_mode' => EE_Maintenance_Mode::instance()->real_level(),
+			'served_core_versions' => array_keys( EED_REST_API::versions_served() )
 		);
 		return $existing_index_info;
 	}
