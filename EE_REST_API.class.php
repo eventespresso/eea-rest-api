@@ -30,7 +30,7 @@ Class  EE_REST_API extends EE_Addon {
 			'REST_API',
 			array(
 				'version' 					=> EE_REST_API_VERSION,
-				'min_core_version' => '4.3.0.dev.000',
+				'min_core_version' => '4.6.32.rc.000',
 				'main_file_path' 				=> EE_REST_API_PLUGIN_FILE,
 				'admin_path' 			=> EE_REST_API_ADMIN,
 				'admin_callback'		=> 'additional_admin_hooks',

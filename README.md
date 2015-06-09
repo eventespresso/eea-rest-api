@@ -3,7 +3,7 @@ EE4 REST API
 
 An Event Espresso 4 addon for providing an RESTful interface for event espresso's data. If you are considering using this API, please <a href='http://eventespresso.com/developers/event-espresso-4-rest-api-survey/'>complete this survey</a> to help us make it better.
 
-Branch FET-8-integrate-core-7976 is the most advanced but currently only works with a non-released version of EE core 4.6: <a href='https://github.com/eventespresso/event-espresso-core/tree/FET-7976-permissions-defined-in-models'> branch FET-7976-permissions-defined-in-models on our EE4 Core Github Repo</a>. The master branch of this plugin should work with EE core 4.6 master however.
+The master branch of this plugin should work with EE core 4.6.32 or higher.
 
 This plugin also requires you have the master branch of <a href='https://github.com/WP-API/WP-API'>the WP API</a> active on your site.
 
