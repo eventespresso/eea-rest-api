@@ -201,6 +201,68 @@ class EE_REST_API_Model_Version_Info {
 		return $this->_cached_fields_on_models;
 	}
 
+	/**
+	 * Determines if $object is of one of the classes of $classes. Similar to
+	 * in_array(), except this checks if $object is a subclass of the classnames provided
+	 * in $classnames
+	 * @param type $object
+	 * @param type $classnames
+	 * @return boolean
+	 */
+	public function is_subclass_of_one( $object, $classnames ) {
+		foreach( $classnames as $classname ) {
+			if( is_a( $object, $classname ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Returns the list of model field classes that that the API basically ignores
+	 * @return array
+	 */
+	public function fields_ignored(){
+		return apply_filters( 'FHEE__EE_REST_API_Controller_Model_Read_fields_ignored', array( 'EE_Foreign_Key_Field_Base', 'EE_Any_Foreign_Model_Name_Field' ) );
+	}
+
+	/**
+	 * If this field one that should be ignored by the API?
+	 * @param EE_Model_Field_Base
+	 * @return boolean
+	 */
+	public function field_is_ignored( $field_obj ){
+		 return $this->is_subclass_of_one( $field_obj, $this->fields_ignored() );
+	}
+
+	/**
+	 * Returns the list of model field classes that have a "_raw" and non-raw versions.
+	 * Normally the "_raw" versions are only accessible to those who can edit them.
+	 * @return array an array of EE_Model_Field_Base child classnames
+	 */
+	public function fields_raw() {
+		return apply_filters( 'FHEE__EE_REST_API_Controller_Model_Read__fields_raw', array ('EE_Post_Content_Field', 'EE_Full_HTML_Field' ) );
+	}
+
+	/**
+	 * If this field one that is raw
+	 * @param EE_Model_Field_Base
+	 * @return boolean
+	 */
+	public function field_is_raw( $field_obj ){
+		 return $this->is_subclass_of_one( $field_obj, $this->get_model_version_info()->fields_raw() );
+	}
+
+	/**
+	 * Returns the list of model field classes that have a "_pretty" and non-pretty versions.
+	 * The pretty version of the field is NOT queryable or editable, but requires no extra permissions
+	 * to view
+	 * @return array an array of EE_Model_Field_Base child classnames
+	 */
+	public function fields_pretty() {
+		return apply_filters( 'FHEE__EE_REST_API_Controller_Model_Read__fields_pretty', array ( 'EE_Enum_Integer_Field', 'EE_Enum_Text_Field', 'EE_Money_Field' ) );
+	}
+
 }
 
 // End of file EE_REST_API_Model_Version_Info.class.php

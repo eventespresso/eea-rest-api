@@ -5,7 +5,7 @@ if ( !defined( 'EVENT_ESPRESSO_VERSION' ) ) {
 
 /**
  *
- * EE_Config_Rest_Read_Controller
+ * EE_REST_API_Controller_Config_Read
  *
  * For handling READ requests for config data
  *
@@ -14,7 +14,7 @@ if ( !defined( 'EVENT_ESPRESSO_VERSION' ) ) {
  * @author				Mike Nelson
  *
  */
-class EE_Config_Rest_Read_Controller {
+class EE_REST_API_Controller_Config_Read {
 	public static function handle_request() {
 		$cap = EE_Restriction_Generator_Base::get_default_restrictions_cap();
 		if( EE_Capabilities::instance()->current_user_can( $cap, 'read_over_api' ) ){
@@ -25,4 +25,4 @@ class EE_Config_Rest_Read_Controller {
 	}
 }
 
-// End of file EE_Config_Rest_Read_Controller.class.php
+// End of file EE_REST_API_Controller_Config_Read.class.php

@@ -319,7 +319,7 @@ class EE_REST_API_Capabilities {
 					);
 				}
 			}
-			$restrictions =  apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__get_permissions', $restrictions );
+			$restrictions =  apply_filters( 'FHEE__EE_REST_API_Controller_Model_Read__get_permissions', $restrictions );
 			foreach( $restrictions as $model_name => $request_types_handled ) {
 				foreach( $request_types_handled as $request_type_handled => $api_fields ){
 					foreach( $api_fields as $api_field_name => $permissions_and_access_restrictions ) {

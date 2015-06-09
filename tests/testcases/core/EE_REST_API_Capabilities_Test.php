@@ -16,7 +16,7 @@ class EE_REST_API_Capabilities_Test extends EE_UnitTestCase{
 	function setUp(){
 		parent::setUp();
 		EE_REST_API_Capabilities::reset();
-		add_filter( 'FHEE__EE_Models_Rest_Read_Controller__get_permissions', array( $this, 'set_some_restrictions_for_tests', ) );
+		add_filter( 'FHEE__EE_REST_API_Controller_Model_Read__get_permissions', array( $this, 'set_some_restrictions_for_tests', ) );
 	}
 	/**
 	 * Replaces the normal restrictions with a mock restrictions array

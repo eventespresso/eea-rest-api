@@ -5,7 +5,7 @@ if ( !defined( 'EVENT_ESPRESSO_VERSION' ) ) {
 
 /**
  *
- * EE_Models_Rest_Read_Controller
+ * EE_REST_API_Controller_Model_Read
  *
  * Handles requests relating to GETting model information
  *
@@ -14,18 +14,9 @@ if ( !defined( 'EVENT_ESPRESSO_VERSION' ) ) {
  * @author				Mike Nelson
  *
  */
-class EE_Models_Rest_Read_Controller {
-	/**
-	 * Contains debug info we'll send back in the response headers
-	 * @var array
-	 */
-	protected $_debug_info = array();
+class EE_REST_API_Controller_Model_Read extends EE_REST_API_Controller_Model_Base {
 
-	/**
-	 * Indicates whether or not the API is in debug mode
-	 * @var boolean
-	 */
-	protected $_debug_mode = false;
+
 
 	/**
 	 *
@@ -42,7 +33,7 @@ class EE_Models_Rest_Read_Controller {
 
 		//setup data for "extra" fields added onto resources which don't actually exist on models
 		$this->_extra_fields_for_models = apply_filters(
-				'FHEE__EE_Models_Rest_Read_Controller___construct__extra_fields_for_models',
+				'FHEE__EE_REST_API_Controller_Model_Read___construct__extra_fields_for_models',
 				array(
 					'EEM_CPT_Base' => array(
 						'featured_image_url' => array(
@@ -96,11 +87,11 @@ class EE_Models_Rest_Read_Controller {
 	 * @return WP_JSON_Response|WP_Error
 	 */
 	public static function handle_request_get_all( $_path, $filter = array(), $include = '*' ) {
-		$controller = new EE_Models_Rest_Read_Controller();
+		$controller = new EE_REST_API_Controller_Model_Read();
 		try{
 			$regex = '~' . EED_REST_API::ee_api_namespace_for_regex . '(.*)~';
 			$success = preg_match( $regex, $_path, $matches );
-			if ( is_array( $matches ) && isset( $matches[ 1 ] ) && isset( $matches[ 1 ] ) ) {
+			if ( is_array( $matches ) && isset( $matches[ 1 ] ) && isset( $matches[ 2 ] ) ) {
 				$requested_version = $matches[ 1 ];
 				$controller->set_requested_version( $requested_version );
 				$model_name_plural = $matches[ 2 ];
@@ -125,14 +116,13 @@ class EE_Models_Rest_Read_Controller {
 	 * Gets a single entity related to the model indicated in the path and its id
 	 * @param string $_path
 	 * @param string $id ID of the thing to be retrieved
-	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
+	 * @param string $include @see EE_REST_API_Controller_Model_Read:handle_request_get_all
 	 * @param string $filter @see handle_request_get_all, for now only the 'caps' item is used
 	 * @return WP_JSON_Response|WP_Error
 	 */
 	public static function handle_request_get_one( $_path, $id, $include = '*', $filter = array() ) {
-		$controller = new EE_Models_Rest_Read_Controller();
+		$controller = new EE_REST_API_Controller_Model_Read();
 		try{
-			$inflector = new Inflector();
 			$regex = '~' . EED_REST_API::ee_api_namespace_for_regex . '(.*)/(.*)~';
 			$success = preg_match( $regex, $_path, $matches );
 			if ( $success && is_array( $matches ) && isset( $matches[ 1 ] ) && isset( $matches[ 2 ] ) ) {
@@ -163,12 +153,12 @@ class EE_Models_Rest_Read_Controller {
 	 * to the item with the given id
 	 * @param string $_path
 	 * @param string $id
-	 * @param array $filter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
-	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
+	 * @param array $filter @see EE_REST_API_Controller_Model_Read:handle_request_get_all
+	 * @param string $include @see EE_REST_API_Controller_Model_Read:handle_request_get_all
 	 * @return WP_JSON_Response|WP_Error
 	 */
 	public static function handle_request_get_related( $_path, $id, $filter = array(), $include = '*' ) {
-		$controller = new EE_Models_Rest_Read_Controller();
+		$controller = new EE_REST_API_Controller_Model_Read();
 		try{
 			$regex = '~' . EED_REST_API::ee_api_namespace_for_regex . '(.*)/(.*)/(.*)~';
 			$success = preg_match( $regex, $_path, $matches );
@@ -204,8 +194,8 @@ class EE_Models_Rest_Read_Controller {
 	/**
 	 * Gets a collection for the given model and filters
 	 * @param EEM_Base $model
-	 * @param array $filter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
-	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
+	 * @param array $filter @see EE_REST_API_Controller_Model_Read:handle_request_get_all
+	 * @param string $include @see EE_REST_API_Controller_Model_Read:handle_request_get_all
 	 * @return array
 	 */
 	public function get_entities_from_model( $model, $filter, $include ) {
@@ -227,13 +217,13 @@ class EE_Models_Rest_Read_Controller {
 	/**
 	 * Gets the coollection for given relation object
 	 *
-	 * The same as EE_Models_Rest_Read_Controller::get_entities_from_model(), except if the relation
+	 * The same as EE_REST_API_Controller_Model_Read::get_entities_from_model(), except if the relation
 	 * is a HABTM relation, in which case it merges any non-foreign-key fields from
 	 * the join-model-object into the results
 	 * @param string $id the ID of the thing we are fetching related stuff from
 	 * @param EE_Model_Relation_Base $relation
-	 * @param array $filter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
-	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
+	 * @param array $filter @see EE_REST_API_Controller_Model_Read:handle_request_get_all
+	 * @param string $include @see EE_REST_API_Controller_Model_Read:handle_request_get_all
 	 * @return array
 	 */
 	public function get_entities_from_relation( $id,  $relation, $filter, $include ) {
@@ -287,55 +277,13 @@ class EE_Models_Rest_Read_Controller {
 		}
 	}
 
-	/**
-	 * Returns the list of model field classes that that the API basically ignores
-	 * @return array
-	 */
-	public function fields_ignored(){
-		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller_fields_ignored', array( 'EE_Foreign_Key_Field_Base', 'EE_Any_Foreign_Model_Name_Field' ) );
-	}
 
-	/**
-	 * Returns the list of model field classes that have a "_raw" and non-raw versions.
-	 * Normally the "_raw" versions are only accessible to those who can edit them.
-	 * @return array an array of EE_Model_Field_Base child classnames
-	 */
-	public function fields_raw() {
-		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__fields_raw', array ('EE_Post_Content_Field', 'EE_Full_HTML_Field' ) );
-	}
-
-	/**
-	 * Returns the list of model field classes that have a "_pretty" and non-pretty versions.
-	 * The pretty version of the field is NOT queryable or editable, but requires no extra permissions
-	 * to view
-	 * @return array an array of EE_Model_Field_Base child classnames
-	 */
-	public function fields_pretty() {
-		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__fields_pretty', array ( 'EE_Enum_Integer_Field', 'EE_Enum_Text_Field', 'EE_Money_Field' ) );
-	}
-
-	/**
-	 * Determines if $object is of one of the classes of $classes. Similar to
-	 * in_array(), except this checks if $object is a subclass of the classnames provided
-	 * in $classnames
-	 * @param type $object
-	 * @param type $classnames
-	 * @return boolean
-	 */
-	public function is_subclass_of_one( $object, $classnames ) {
-		foreach( $classnames as $classname ) {
-			if( is_a( $object, $classname ) ) {
-				return true;
-			}
-		}
-		return false;
-	}
 
 	/**
 	 * Changes database results into REST API entities
 	 * @param EEM_Base $model
 	 * @param array $db_row like results from $wpdb->get_results()
-	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
+	 * @param string $include @see EE_REST_API_Controller_Model_Read:handle_request_get_all
 	 * @param string $context one of the return values from EEM_Base::valid_cap_contexts()
 	 * @return array ready for being converted into json for sending to client
 	 */
@@ -345,12 +293,12 @@ class EE_Models_Rest_Read_Controller {
 		foreach( $result as $field_name => $raw_field_value ) {
 			$field_obj = $model->field_settings_for($field_name);
 			$field_value = $field_obj->prepare_for_set_from_db( $raw_field_value );
-			if( $this->is_subclass_of_one(  $field_obj, $this->fields_ignored() ) ){
+			if( $this->is_subclass_of_one(  $field_obj, $this->get_model_version_info()->fields_ignored() ) ){
 				unset( $result[ $field_name ] );
-			}elseif( $this->is_subclass_of_one(  $field_obj, $this->fields_raw() ) ){
+			}elseif( $this->is_subclass_of_one(  $field_obj, $this->get_model_version_info()->fields_raw() ) ){
 				$result[ $field_name . '_raw' ] = $field_obj->prepare_for_get( $field_value );
 				$result[ $field_name ] = $field_obj->prepare_for_pretty_echoing( $field_value );
-			}elseif( $this->is_subclass_of_one( $field_obj, $this->fields_pretty() ) ){
+			}elseif( $this->is_subclass_of_one( $field_obj, $this->get_model_version_info()->fields_pretty() ) ){
 				$result[ $field_name ] = $field_obj->prepare_for_get( $field_value );
 				$result[ $field_name . '_pretty' ] = $field_obj->prepare_for_pretty_echoing( $field_value );
 			}elseif( $field_obj instanceof EE_Datetime_Field ){
@@ -368,7 +316,7 @@ class EE_Models_Rest_Read_Controller {
 		}
 		//add links to related data
 		$result['meta']['links'] = array(
-			'self' => json_url( EED_REST_API::ee_api_namespace . Inflector::pluralize_and_lower( $model->get_this_model_name() ) . '/' . $result[ $model->primary_key_name() ]
+			'self' => $this->get_versioned_link_to( EEH_Inflector::pluralize_and_lower( $model->get_this_model_name() ) . '/' . $result[ $model->primary_key_name() ]
 		) );
 
 		if( $model instanceof EEM_CPT_Base ) {
@@ -385,10 +333,10 @@ class EE_Models_Rest_Read_Controller {
 			$result = array_intersect_key( $result, array_flip( $includes_for_this_model ) );
 		}
 		//add meta links and possibly include related models
-		foreach( apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_entity_from_wpdb_result__related_models_to_include', $model->relation_settings() ) as $relation_name => $relation_obj ) {
+		foreach( apply_filters( 'FHEE__EE_REST_API_Controller_Model_Read__create_entity_from_wpdb_result__related_models_to_include', $model->relation_settings() ) as $relation_name => $relation_obj ) {
 			$related_model_part = $this->get_related_entity_name( $relation_name, $relation_obj );
 			if( empty( $includes_for_this_model ) || isset( $includes_for_this_model['meta'] ) ) {
-				$result['meta']['links'][$related_model_part] = json_url( EED_REST_API::ee_api_namespace . Inflector::pluralize_and_lower( $model->get_this_model_name() ) . '/' . $result[ $model->primary_key_name() ] . '/' . $related_model_part );
+				$result['meta']['links'][$related_model_part] = $this->get_versioned_link_to( EEH_Inflector::pluralize_and_lower( $model->get_this_model_name() ) . '/' . $result[ $model->primary_key_name() ] . '/' . $related_model_part );
 			}
 			$related_fields_to_include = $this->extract_includes_for_this_model( $include, $relation_name );
 			if( $related_fields_to_include ) {
@@ -396,10 +344,19 @@ class EE_Models_Rest_Read_Controller {
 				 $result[ $related_model_part ] = $related_results instanceof WP_Error ? null : $related_results;
 			}
 		}
-		$result = apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_entity_from_wpdb_results__entity_before_innaccessible_field_removal', $result, $model, $context );
+		$result = apply_filters( 'FHEE__EE_REST_API_Controller_Model_Read__create_entity_from_wpdb_results__entity_before_innaccessible_field_removal', $result, $model, $context );
 		$result_without_inaccessible_fields = EE_REST_API_Capabilities::filter_out_inaccessible_entity_fields( $result, $model, $context );
 		$this->_set_debug_info( 'inaccessible fields', array_keys( array_diff_key( $result, $result_without_inaccessible_fields ) ) );
-		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_entity_from_wpdb_results__entity_return', $result_without_inaccessible_fields, $model, $context );
+		return apply_filters( 'FHEE__EE_REST_API_Controller_Model_Read__create_entity_from_wpdb_results__entity_return', $result_without_inaccessible_fields, $model, $context );
+	}
+
+	/**
+	 * Gets the full URL to the resource, taking the requested version into account
+	 * @param string $link_part_after_version_and_slash eg "events/10/datetimes"
+	 * @return string url eg "http://mysite.com/wp-json/ee/v4.6/events/10/datetimes"
+	 */
+	public function get_versioned_link_to( $link_part_after_version_and_slash ) {
+		return json_url( EED_REST_API::ee_api_namespace . $this->get_model_version_info()->requested_version() . '/' . $link_part_after_version_and_slash );
 	}
 
 	/**
@@ -413,7 +370,7 @@ class EE_Models_Rest_Read_Controller {
 		if( $relation_obj instanceof EE_Belongs_To_Relation ) {
 			return strtolower( $relation_name );
 		}else{
-			return Inflector::pluralize_and_lower( $relation_name );
+			return EEH_Inflector::pluralize_and_lower( $relation_name );
 		}
 	}
 
@@ -424,7 +381,7 @@ class EE_Models_Rest_Read_Controller {
 	 * Gets the one model object with the specified id for the specified model
 	 * @param EEM_Base $model
 	 * @param string $id ID of the entity we want to retrieve
-	 * @param string $include @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
+	 * @param string $include @see EE_REST_API_Controller_Model_Read:handle_request_get_all
 	 * @param string string one of the return values from EEM_Base::valid_cap_contexts()
 	 * @return array
 	 */
@@ -474,7 +431,7 @@ class EE_Models_Rest_Read_Controller {
 	/**
 	 * Translates API filter get parameter into $query_params array used by EEM_Base::get_all()
 	 * @param EEM_Base $model
-	 * @param array $filter from $_GET['filter'] parameter @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
+	 * @param array $filter from $_GET['filter'] parameter @see EE_REST_API_Controller_Model_Read:handle_request_get_all
 	 * @return array like what EEM_Base::get_all() expects or FALSE to indicate
 	 * that absolutely no results should be returned
 	 */
@@ -543,7 +500,7 @@ class EE_Models_Rest_Read_Controller {
 		}else{
 			$model_query_params[ 'caps' ] = EEM_Base::caps_read;
 		}
-		return apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__create_model_query_params', $model_query_params, $filter, $model );
+		return apply_filters( 'FHEE__EE_REST_API_Controller_Model_Read__create_model_query_params', $model_query_params, $filter, $model );
 	}
 
 	/**
@@ -595,7 +552,7 @@ class EE_Models_Rest_Read_Controller {
 	 * Parses the $include_string so we fetch all the field names relating to THIS model
 	 * (ie have NO period in them), or for the provided model (ie start with the model
 	 * name and then a period).
-	 * @param string $include_string @see EE_MOdels_Rest_Read_Controller:handle_request_get_all
+	 * @param string $include_string @see EE_REST_API_Controller_Model_Read:handle_request_get_all
 	 * @param string $model_name
 	 * @return array of fields for this model. If $model_name is provided, then
 	 * the fields for that model, with the model's name removed from each.
@@ -634,45 +591,7 @@ class EE_Models_Rest_Read_Controller {
 	}
 
 
-	/**
-	 * Sends a response, but also makes sure to attach headers that
-	 * are handy for debugging.
-	 * Specifically, we assume folks will want to know what exactly was the DB query that got run,
-	 * what exactly was the Models query that got run, what capabilities came into play, what fields were ommitted from the response, others?
-	 * @param array|WP_Error $response
-	 */
-	public function send_response( $response ) {
-		if( $response instanceof WP_Error ) {
-			//we want to send a "normal"-looking WP error response, but we also
-			//want to add headers. It doesn't seem WP API 1.2 supports this.
-			//I'd like to use WP_JSON_Server::error_to_response() but its protected
-			//so here's most of it copy-and-pasted :P
-			$error_data = $response->get_error_data();
-			if ( is_array( $error_data ) && isset( $error_data['status'] ) ) {
-				$status = $error_data['status'];
-			} else {
-				$status = 500;
-			}
 
-			$data = array();
-			foreach ( (array) $response->errors as $code => $messages ) {
-				foreach ( (array) $messages as $message ) {
-					$data[] = array( 'code' => $code, 'message' => $message );
-				}
-			}
-			$response = new WP_JSON_Response( $data, $status );
-		}else{
-			$status = 200;
-		}
-		$headers = array();
-		foreach( $this->_debug_info  as $debug_key => $debug_info ) {
-			if( is_array( $debug_info ) ) {
-				$debug_info = json_encode( $debug_info );
-			}
-			$headers[ 'X-EE4-Debug-' . ucwords( $debug_key ) ] = $debug_info;
-		}
-		return new WP_JSON_Response( $response, $status,  $headers );
-	}
 
 	/**
 	 * Sets some debug info that we'll send back in headers
@@ -697,38 +616,7 @@ class EE_Models_Rest_Read_Controller {
 		return array();
 	}
 
-	/**
-	 * Indicates the version that was requested
-	 * @var string
-	 */
-	protected $_requested_version;
-	/**
-	 * Holds reference to the model versio info, which knows the requested version
-	 * @var EE_REST_API_Model_Version_Info
-	 */
-	protected $_model_version_info;
-	/**
-	 * Sets the version the user requested
-	 * @param string $version eg '4.8'
-	 */
-	public function set_requested_version( $version ) {
-		$this->_requested_version = $version;
-		$this->_model_version_info = new EE_REST_API_Model_Version_Info( $version );
-	}
-
-	/**
-	 * Gets the object that should be used for getting any info from the models,
-	 * because it's takes the requested and current core version into account
-	 * @return EE_REST_API_Model_Version_Info
-	 */
-	public function get_model_version_info(){
-		if( ! $this->_model_version_info ) {
-			throw new EE_Error( sprintf( __( 'Cannot use model version info before setting the requested version in the controller', 'event_espresso' ) ) );
-		}
-		return $this->_model_version_info;
-	}
-
 }
 
 
-// End of file EE_Models_Rest_Read_Controller.class.php
+// End of file EE_REST_API_Controller_Model_Read.class.php
