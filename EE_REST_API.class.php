@@ -37,18 +37,15 @@ Class  EE_REST_API extends EE_Addon {
 				'config_class' 			=> 'EE_REST_API_Config',
 				'config_name' 		=> 'EE_REST_API',
 				'autoloader_paths' => array(
-					'EE_REST_API' 						=> EE_REST_API_PATH . 'EE_REST_API.class.php',
 					'EE_REST_API_Config' 			=> EE_REST_API_PATH . 'EE_REST_API_Config.php',
-					'REST_API_Admin_Page' 		=> EE_REST_API_ADMIN . 'REST_API_Admin_Page.core.php',
-					'REST_API_Admin_Page_Init' => EE_REST_API_ADMIN . 'REST_API_Admin_Page_Init.core.php',
-					'Inflector' => EE_REST_API_PATH . 'core/libraries/Inflector.class.php',
-					'EE_Models_Rest_Read_Controller' => EE_REST_API_PATH . 'EE_Models_Rest_Read_Controller.class.php',
-					'EE_Config_Rest_Read_Controller' => EE_REST_API_PATH . 'EE_Config_Rest_Read_Controller.class.php',
-					'EE_REST_API_Capabilities' => EE_REST_API_PATH . 'core/EE_REST_API_Capabilities.class.php'
+					'Rest_Api_Admin_Page' 		=> EE_REST_API_ADMIN . 'Rest_Api_Admin_Page.core.php',
+					'Rest_Api_Admin_Page_Init' => EE_REST_API_ADMIN . 'Rest_Api_Admin_Page_Init.core.php',
+					'EE_REST_API_Capabilities' => EE_REST_API_PATH . 'core/EE_REST_API_Capabilities.class.php',
+					'EE_REST_API_Model_Version_Info' => EE_REST_API_PATH . 'core/EE_REST_API_Model_Version_Info.class.php'
+					//note, we also just autoloaded the entire controllers folder
 				),
 
 				'module_paths' 		=> array( EE_REST_API_PATH . 'EED_REST_API.module.php' ),
-				'widget_paths' 		=> array( EE_REST_API_PATH . 'EEW_REST_API.widget.php' ),
 				// if plugin update engine is being used for auto-updates. not needed if PUE is not being used.
 				'pue_options'			=> array(
 					'pue_plugin_slug' => 'eea-rest-api',
@@ -63,6 +60,9 @@ Class  EE_REST_API extends EE_Addon {
 					),
 			)
 		);
+		//autoload call controller
+		EE_Registry::instance()->load_helper( 'Activation' );
+		EEH_Autoloader::register_autoloaders_for_each_file_in_folder( EE_REST_API_PATH . 'controllers' );
 		//update the routes wp option whenever any other EE addon is updated or activated, or core is updated
 		add_action( 'AHEE__EEH_Activation__initialize_db_content', array( 'EED_REST_API', 'save_ee_routes' ) );
 		add_action( 'AHEE__EE_Addon__initialize_default_data__begin', array( 'EED_REST_API', 'save_ee_routes' ) );

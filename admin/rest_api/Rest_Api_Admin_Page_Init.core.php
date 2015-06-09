@@ -13,30 +13,30 @@
 *
 * ------------------------------------------------------------------------
 *
-* REST_API_Admin_Page_Init class
+* Rest_Api_Admin_Page_Init class
 *
 * This is the init for the REST_API Addon Admin Pages.  See EE_Admin_Page_Init for method inline docs.
 *
 * @package			Event Espresso (rest_api addon)
-* @subpackage		admin/REST_API_Admin_Page_Init.core.php
-* @author				Darren Ethier
+* @subpackage		admin/Rest_Api_Admin_Page_Init.core.php
+* @author				Mike Nelson
 *
 * ------------------------------------------------------------------------
 */
-class REST_API_Admin_Page_Init extends EE_Admin_Page_Init  {
+class Rest_Api_Admin_Page_Init extends EE_Admin_Page_Init  {
 
 	/**
 	 * 	constructor
 	 *
 	 * @access public
-	 * @return \REST_API_Admin_Page_Init
+	 * @return \Rest_Api_Admin_Page_Init
 	 */
 	public function __construct() {
 
 		do_action( 'AHEE_log', __FILE__, __FUNCTION__, '' );
 
 		define( 'REST_API_PG_SLUG', 'espresso_rest_api' );
-		define( 'REST_API_LABEL', __( 'REST_API', 'event_espresso' ));
+		define( 'REST_API_LABEL', __( 'REST API', 'event_espresso' ));
 		define( 'EE_REST_API_ADMIN_URL', admin_url( 'admin.php?page=' . REST_API_PG_SLUG ));
 		define( 'EE_REST_API_ADMIN_ASSETS_PATH', EE_REST_API_ADMIN . 'assets' . DS );
 		define( 'EE_REST_API_ADMIN_ASSETS_URL', EE_REST_API_URL . 'admin' . DS . 'rest_api' . DS . 'assets' . DS );
@@ -80,5 +80,5 @@ class REST_API_Admin_Page_Init extends EE_Admin_Page_Init  {
 
 
 }
-// End of file REST_API_Admin_Page_Init.core.php
-// Location: /wp-content/plugins/eea-rest-api/admin/rest_api/REST_API_Admin_Page_Init.core.php
+// End of file Rest_Api_Admin_Page_Init.core.php
+// Location: /wp-content/plugins/eea-rest-api/admin/rest_api/Rest_Api_Admin_Page_Init.core.php

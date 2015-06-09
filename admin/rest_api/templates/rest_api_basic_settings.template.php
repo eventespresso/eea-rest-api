@@ -7,7 +7,15 @@
 	</h4>
 	<table class="form-table">
 		<tbody>
-
+			<tr>
+				<th><?php _e("Debug Mode?", 'event_espresso');?></th>
+				<td>
+					<?php echo EEH_Form_Fields::select( __('API Debug Mode?', 'event_espresso'), $rest_api_config->api_debug_mode, $yes_no_values, 'rest_api[api_debug_mode]', 'rest-api-api-debug-mode' ); ?><br/>
+					<span class="description">
+						<?php _e('Set to \'Yes\' to set the EE4 API in Debug Mode. This will provide debug information to API Clients that is helpful during development, but inconvenient on live servers.', 'event_espresso'); ?>
+					</span>
+				</td>
+			</tr>
 			<tr>
 				<th><?php _e("Reset REST_API Settings?", 'event_espresso');?></th>
 				<td>

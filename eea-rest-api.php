@@ -39,11 +39,15 @@
 define( 'EE_REST_API_VERSION', '0.9.9.rc.034' );
 define( 'EE_REST_API_PLUGIN_FILE',  __FILE__ );
 function load_espresso_rest_api() {
-if ( class_exists( 'EE_Addon' )) {
-	// rest_api version
-	require_once ( plugin_dir_path( __FILE__ ) . 'EE_REST_API.class.php' );
-	EE_REST_API::register_addon();
-}
+	if ( class_exists( 'EE_Addon' ) ) {
+		if( class_exists( 'WP_JSON_Server' ) ) {
+			// rest_api version
+			require_once ( plugin_dir_path( __FILE__ ) . 'EE_REST_API.class.php' );
+			EE_REST_API::register_addon();
+		} else {
+			EE_Error::add_error( __( 'The Event Espresso REST API requires the WP REST/JSON API version to be running (the latest stable version of the WP REST/JSON API at the time of writing was 1.2.0)', 'event_espresso' ), __FILE__, __FUNCTION__, __LINE__ );
+		}
+	}
 }
 add_action( 'AHEE__EE_System__load_espresso_addons', 'load_espresso_rest_api' );
 

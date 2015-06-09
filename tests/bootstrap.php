@@ -25,4 +25,3 @@ require WP_TESTS_DIR . '/includes/bootstrap.php';
 
 //Load the EE_specific testing tools
 require EE_TESTS_DIR . 'includes/EE_UnitTestCase.class.php';
-require_once WP_API_TESTS_DIR. '/test-json-testcase.php';

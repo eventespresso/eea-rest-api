@@ -29,7 +29,7 @@ class EE_REST_API_Capabilities {
 		if( ! self::$_access_restrictions ) {
 			$event_editing_restrictions = array(
 				//in order to edit an event you need this permission
-				'ee_edit_events' => new EE_API_Access_Entity_Never()
+				'ee_edit_events' => new EE_Return_None_Where_Conditions()
 			);
 			$restrictions = array(
 				'Answer' => array(
@@ -99,10 +99,10 @@ class EE_REST_API_Capabilities {
 					 WP_JSON_Server::READABLE => array(
 						 '*' => array(
 							 //if they can't read events (in the admin) only show them ones they can see on the frontend
-							 'ee_read_events' => new EE_API_Access_Entity_If( array( 'status' => 'publish', //'Datetime.DTT_EVT_end' => array( '>=', current_time('mysql' ) )
+							 'ee_read_events' => new EE_Default_Where_Conditions( array( 'status' => 'publish', //'Datetime.DTT_EVT_end' => array( '>=', current_time('mysql' ) )
 								 ) ),
 							 //without 'ee_read_private_events' don't show others' private events
-							 'ee_read_private_events' => new EE_API_Access_Entity_If( array( 'NOT*no_others_private_events' => array( 'status' => 'private', 'EVT_wp_user' => array( '!=', get_current_user_id() ) ) ) )
+							 'ee_read_private_events' => new EE_Default_Where_Conditions( array( 'NOT*no_others_private_events' => array( 'status' => 'private', 'EVT_wp_user' => array( '!=', get_current_user_id() ) ) ) )
 						 ),
 						 'EVT_desc_raw' => $event_editing_restrictions//only show them the EVT_desc_raw if they can edit the event
 
@@ -238,9 +238,9 @@ class EE_REST_API_Capabilities {
 					WP_JSON_Server::READABLE => array(
 						'*' => array(
 							//don't show event categories if they can't see those
-							'ee_manage_event_categories' => new EE_API_Access_Entity_If( array( 'Term_Taxonomy.taxonomy*no_event_cats' => array( '!=', 'espresso_event_categories' ) ) ),
+							'ee_manage_event_categories' => new EE_Default_Where_Conditions( array( 'Term_Taxonomy.taxonomy*no_event_cats' => array( '!=', 'espresso_event_categories' ) ) ),
 							//dont' show venue categories if they can't see those
-							'ee_manage_venue_categories' => new EE_API_Access_Entity_If( array( 'Term_Taxonomy.taxonomy*no_venue_cats' => array( '!=', 'espresso_venue_categories' ) ) ),
+							'ee_manage_venue_categories' => new EE_Default_Where_Conditions( array( 'Term_Taxonomy.taxonomy*no_venue_cats' => array( '!=', 'espresso_venue_categories' ) ) ),
 							)
 					)
 				),
@@ -248,9 +248,9 @@ class EE_REST_API_Capabilities {
 					WP_JSON_Server::READABLE => array(
 						'*' => array(
 							//don't show event categories if they can't see those
-							'ee_manage_event_categories' => new EE_API_Access_Entity_If( array( 'Event.EVT_ID' => array( 'IS_NULL' ) ) ),
+							'ee_manage_event_categories' => new EE_Default_Where_Conditions( array( 'Event.EVT_ID' => array( 'IS_NULL' ) ) ),
 							//dont' show venue categories if they can't see those
-							'ee_manage_venue_categories' => new EE_API_Access_Entity_If( array( 'Venue.VNU_ID' => array( 'IS_NULL' ) ) ),
+							'ee_manage_venue_categories' => new EE_Default_Where_Conditions( array( 'Venue.VNU_ID' => array( 'IS_NULL' ) ) ),
 							)
 					)
 				),
@@ -258,9 +258,9 @@ class EE_REST_API_Capabilities {
 					WP_JSON_Server::READABLE => array(
 						'*' => array(
 							//don't show event categories if they can't see those
-							'ee_manage_event_categories' => new EE_API_Access_Entity_If( array( 'Event.EVT_ID' => array( 'IS_NULL' ) ) ),
+							'ee_manage_event_categories' => new EE_Default_Where_Conditions( array( 'Event.EVT_ID' => array( 'IS_NULL' ) ) ),
 							//dont' show venue categories if they can't see those
-							'ee_manage_venue_categories' => new EE_API_Access_Entity_If( array( 'Venue.VNU_ID' => array( 'IS_NULL' ) ) ),
+							'ee_manage_venue_categories' => new EE_Default_Where_Conditions( array( 'Venue.VNU_ID' => array( 'IS_NULL' ) ) ),
 							)
 					)
 				),
@@ -313,21 +313,19 @@ class EE_REST_API_Capabilities {
 						WP_JSON_Server::READABLE => array(
 							'*' => array(
 								//by default, if they're basically not an admin, they can't read this
-								'activate_plugins' => new EE_API_Access_Entity_Never()
+								'activate_plugins' => new EE_Return_None_Where_Conditions()
 							)
 						)
 					);
 				}
 			}
-			$restrictions =  apply_filters( 'FHEE__EE_Models_Rest_Read_Controller__get_permissions', $restrictions );
+			$restrictions =  apply_filters( 'FHEE__EE_REST_API_Controller_Model_Read__get_permissions', $restrictions );
 			foreach( $restrictions as $model_name => $request_types_handled ) {
 				foreach( $request_types_handled as $request_type_handled => $api_fields ){
 					foreach( $api_fields as $api_field_name => $permissions_and_access_restrictions ) {
 						foreach( $permissions_and_access_restrictions as $capability => $access_restriction ){
-							if( ! $access_restriction instanceof EE_API_Access_Restriction ) {
-								throw new EE_Error( sprintf( __( 'You must provide an EE_API_Access_Restriction object that describes how to restrict access to users who dont have a particular permission for the model "%s", request type "%s", at the capability "%s".', 'event_espresso' ), $model_name, $request_type_handled, $capability ) );
-							}else{
-								$access_restriction->set_model_name( $model_name );
+							if( ! $access_restriction instanceof EE_Default_Where_Conditions ) {
+								throw new EE_Error( sprintf( __( 'You must provide an EE_Default_Where_Conditions object that describes how to restrict access to users who dont have a particular permission for the model "%s", request type "%s", at the capability "%s".', 'event_espresso' ), $model_name, $request_type_handled, $capability ) );
 							}
 						}
 					}
@@ -339,35 +337,24 @@ class EE_REST_API_Capabilities {
 	}
 
 	/**
-	 * The current user can see at least SOME of these entities. If a field is provided
-	 * returns whether the current user can access that field on at least some entities
-	 * (tests whether it's possible for them to access any; not whether there actually ARE
-	 * some currently in existence)
+	 * The current user can see at least SOME of these entities.
 	 * @param EEM_Base $model
-	 * @param type $request_type
+	 * @param string $model_context one of the return values from EEM_Base::valid_cap_contexts()
 	 * @return boolean
 	 */
-	public static function current_user_has_partial_access_to( $model, $request_type = WP_JSON_Server::READABLE, $field_name = '*' ) {
-		$access_restrictions = self::get_access_restrictions();
-		if( isset( $access_restrictions[ $model->get_this_model_name() ] ) && isset( $access_restrictions[ $model->get_this_model_name() ][ $request_type ] ) ) {
-			if( isset( $access_restrictions[ $model->get_this_model_name() ][ $request_type ][ $field_name ] ) ) {
-				$field_to_use = $field_name;
-			}elseif( isset( $access_restrictions[ $model->get_this_model_name() ][ $request_type ][ '*' ] ) ){
-				$field_to_use = '*';
-			}else{
-				throw new EE_Error( sprintf( __( 'Could not find default query params for model %s on request type %s because restrictions array setup improperly. There should be an entry for "*" but there is only %s', 'event_espresso' ), $model->get_this_model_name(), $request_type, implode(',', array_keys( $access_restrictions[ $model->get_this_model_name() ][ $request_type ] ) ) ) );
-			}
-			foreach( $access_restrictions[ $model->get_this_model_name() ][ $request_type ][ $field_to_use ] as $capability => $restriction ) {
-				//check that we're not missing a critical capability
-				if( ! current_user_can( $capability ) && $restriction instanceof EE_API_Access_Entity_Never ){
-					return false;
-				}
-			}
+	public static function current_user_has_partial_access_to( $model, $model_context = EEM_Base::caps_read ) {
+		if( apply_filters( 'FHEE__EE_REST_API_Capabilities__current_user_has_partial_access_to__override_begin', false, $model, $model ) ) {
 			return true;
-		}else{
-			//no restrictions defined for this model or request type. It mustn't be accessible
+		}
+		foreach( $model->caps_missing( $model_context ) as $capability_name => $restriction_obj ) {
+			if( $restriction_obj instanceof EE_Return_None_Where_Conditions ){
+				return false;
+			}
+		}
+		if( apply_filters( 'FHEE__EE_REST_API_Capabilities__current_user_has_partial_access_to__override_end', false, $model, $model ) ) {
 			return false;
 		}
+		return true;
 	}
 	/**
 	 * Gets an array of all the capabilities the current user is missing that affected
@@ -376,69 +363,20 @@ class EE_REST_API_Capabilities {
 	 * @param int $request_type one of the consts on WP_JSON_Server
 	 * @return array
 	 */
-	public static function get_missing_permissions( $model, $request_type = WP_JSON_Server::READABLE ) {
-		$caps_missing = array();
-		$access_restrictions = self::get_access_restrictions();
-		if( isset( $access_restrictions[ $model->get_this_model_name() ] ) && isset( $access_restrictions[ $model->get_this_model_name() ][ $request_type ] ) && isset( $access_restrictions[ $model->get_this_model_name() ][ $request_type ][ '*' ] ) ) {
-			foreach( $access_restrictions[ $model->get_this_model_name() ][ $request_type ][ '*' ] as $capability => $restriction ) {
-				//check that we're not missing a critical capability
-				if( ! EE_Registry::instance()->CAP->current_user_can( $capability, 'ee_api_get_missing_permissions' )
- ){
-					$caps_missing[] = $capability;
-				}
-			}
-			return $caps_missing;
-		}else{
-			return array( '**none: no one can access this' );
-		}
+	public static function get_missing_permissions( $model, $request_type = EEM_Base::caps_read ) {
+		return $model->caps_missing( $request_type );
 	}
 	/**
 	 * Gets a string of all the capabilities the current user is missing that affected
 	 * the query
 	 * @param EEM_Base $model
-	 * @param int $request_type one of the consts on WP_JSON_Server
+	 * @param int $model_context one of the return values from EEM_Base::valid_cap_contexts()
 	 * @return string
 	 */
-	public static function get_missing_permissions_string( $model, $request_type = WP_JSON_Server::READABLE ) {
-		return implode(',', self::get_missing_permissions( $model, $request_type ) );
+	public static function get_missing_permissions_string( $model, $model_context = EEM_Base::caps_read ) {
+		return implode(',', array_keys( self::get_missing_permissions( $model, $model_context ) ) );
 	}
 
-	/**
-	 * Modifies the query according to the user's permissions (and if certain permissions
-	 * are missing, we instead impose restrictions on the database query).
-	 * If there is a restriction that means we shouldn't return ANYTHING, just return false.
-	 * Client code will need to understand what false means.
-	 * @param array $query_params @see EEM_Base::get_all
-	 * @param EEM_Base $model
-	 * @param int $request_type like a const on WP_JSON_Server
-	 * @return boolean
-	 */
-	public static function add_restrictions_onto_query( $query_params, $model, $request_type = WP_JSON_Server::READABLE, $field_name = '*' ) {
-		$access_restrictions = self::get_access_restrictions();
-		if( isset( $access_restrictions[ $model->get_this_model_name() ] ) && isset( $access_restrictions[ $model->get_this_model_name() ][ $request_type ] ) ) {
-			if( isset( $access_restrictions[ $model->get_this_model_name() ][ $request_type ][ $field_name ] ) ) {
-				$field_to_use = $field_name;
-			}elseif( isset( $access_restrictions[ $model->get_this_model_name() ][ $request_type ][ '*' ] ) ){
-				$field_to_use = '*';
-			}else{
-				throw new EE_Error( sprintf( __( 'Could not find default query params for model %s on request type %s because restrictions array setup improperly. There should be an entry for "*" but there is only %s', 'event_espresso' ), $model->get_this_model_name(), $request_type, implode(',', array_keys( $access_restrictions[ $model->get_this_model_name() ][ $request_type ] ) ) ) );
-			}
-			foreach( $access_restrictions[ $model->get_this_model_name() ][ $request_type ][ $field_to_use ] as $capability => $restriction ) {
-				//check that we're not missing a critical capability
-				if( ! EE_Registry::instance()->CAP->current_user_can( $capability, 'ee_api_add_restrictions_onto_query' ) ){
-					//missing this permission is a deal-breaker
-					if( ! isset( $query_params[0] ) ){
-						$query_params[0] = array();
-					}
-					$query_params[0] = array_replace( $query_params[0], $restriction->get_where_conditions() );
-				}
-			}
-			return $query_params;
-		}else{
-			//there's no entry, so really no one should be able to access this
-			return false;
-		}
-	}
 	/**
 	 * Can the current user access all entries in this field?
 	 * @param EEM_Base $model
@@ -447,6 +385,7 @@ class EE_REST_API_Capabilities {
 	 * @return boolean
 	 */
 	public static function current_user_has_full_access_to( $model, $request_type, $field_name, $entity_id = null ) {
+		return true;
 		$access_restrictions = self::get_access_restrictions();
 		if( isset( $access_restrictions[ $model->get_this_model_name() ] ) && isset( $access_restrictions[ $model->get_this_model_name() ][ $request_type ] ) ) {
 			if( $entity_id ) {
@@ -472,32 +411,31 @@ class EE_REST_API_Capabilities {
 	}
 
 	/**
-	 * Takes a entity that's ready to be returned
-	 * @param type $entity
+	 * Takes a entity that's ready to be returned and removes fields which the user shouldn't be able to access.
+	 * @param array $entity
 	 * @param EEM_Base $model
-	 * @param type $request_type
-	 * @return type
+	 * @param string $request_type one of the return values from EEM_Base::valid_cap_contexts()
+	 * @return array ready for converting into json
 	 */
-	public static function filter_out_inaccessible_entity_fields( $entity, $model, $request_type = WP_JSON_Server::READABLE ) {
-		$entity_filtered = array();
-		$access_restrictions = EE_REST_API_Capabilities::get_access_restrictions();
-		if( isset( $access_restrictions[ $model->get_this_model_name() ] ) &&
-				isset( $access_restrictions[ $model->get_this_model_name() ][ $request_type ] ) ) {
-			if( ! isset( $entity[ $model->primary_key_name() ] ) ){
-				throw new EE_Error( sprintf( __( 'Entity\'s primary key could not be found in results (could not find a key "%s" among %s when filtering ou inaccessible entity fields for model %s)', 'event_espresso' ), $model->primary_key_name(), implode(',', array_keys( $entity ) ), $model->get_this_model_name() ) );
-			}
-			$entity_id = $entity[ $model->primary_key_name() ];
-			foreach( $entity as $field_name => $value ) {
-				if( EE_REST_API_Capabilities::current_user_has_full_access_to( $model, $request_type, $field_name, $entity_id ) || $model->has_relation( $field_name ) ){
-					$entity_filtered[ $field_name ] = $value;
-				}
-			}
-			return $entity_filtered;
-		}else{
-			//there's no entry for this model. that's weird
-			return array();
+	public static function filter_out_inaccessible_entity_fields( $entity,  $model, $request_type = EEM_Base::caps_read ) {
+		//we only care to do this for frontend reads and when the user can't edit the item
+		if(  $request_type !== EEM_Base::caps_read ||
+				$model->exists( array(
+					array( $model->primary_key_name() => $entity[ $model->primary_key_name() ] ),
+					'default_where_conditions' => 'none',
+					'caps' => EEM_Base::caps_edit ) ) ) {
+			return $entity;
 		}
+		foreach( $model->field_settings() as $field_name => $field_obj ){
+			if( $field_obj instanceof EE_Post_Content_Field && isset( $entity[ $field_name . '_raw' ] )) {
+				unset( $entity[ $field_name . '_raw' ] );
+			}
+		}
+		//theoretically we may want to filter out specific fields for specific models
+
+		return apply_filters( 'FHEE__EE_REST_API_Capabilities__filter_out_inaccessible_entity_fields', $entity, $model, $request_type );
 	}
+
 
 	/**
 	 * Resets the access restrictions
@@ -507,69 +445,4 @@ class EE_REST_API_Capabilities {
 	}
 }
 
-/**
- * Used in the API's EE_Models_Rest_Read_Controller::get_permissions() array
- * to indicate that if if a certain permission is missing, these additional WHERE conditions should be added
- */
-abstract class EE_API_Access_Restriction{
-	protected $_model_name;
-	public function set_model_name( $model_name ){
-		$this->_model_name = $model_name;
-	}
-	/**
-	 *
-	 * @return EEM_Base
-	 */
-	protected function _get_model(){
-		return EE_Registry::instance()->load_model( $this->_model_name );
-	}
-	/**
-	 * Returns an array like EEM_Base::get_all() 's index of 0, ie
-	 * only the WHERE conditions in the query. These are conditions that are
-	 * added onto queries when the user is missing the associated permission
-	 * @return array
-	 */
-	abstract public function get_where_conditions();
-}
-/**
- * If the user doesn't have the indicated permission, they should only have access
- * to model objects that meet this criteria
- */
-class EE_API_Access_Entity_If extends EE_API_Access_Restriction{
-	protected $_where_conditions = array();
-
-	public function __construct( $where_conditions = array() ){
-		$this->_where_conditions = $where_conditions;
-	}
-	public function get_where_conditions() {
-		return $this->_where_conditions;
-	}
-}
-/**
- * If the user doesn't ahve the indicated permission, they should only be able
- * to access model objects that belong to them.
- */
-class EE_API_Access_Entity_If_Owner extends EE_API_Access_Restriction{
-	public function get_where_conditions() {
-		$full_query_params = $this->_get_model()->alter_query_params_to_only_include_mine();
-		return $full_query_params[0];
-	}
-}
-/**
- * Ie if the user doesn't have the indicated permission, they shouldn't be able
- * to access anything
- */
-class EE_API_Access_Entity_Never extends EE_API_Access_Restriction{
-	//mostly marker and unfortunately logic is in client code
-	//but this should indicate to NOT bothe running a query because nothing should be returned
-	public function get_where_conditions() {
-		$model = $this->_get_model();
-		if( $model->has_primary_key_field() ) {
-			return array( $model->primary_key_name() => array('<', 0 ) );
-		}else{
-			$fk_field = $model->get_a_field_of_type( 'EE_Foreign_Key_Field_Base' );
-			return array( 'AND*impossible' => array( $fk_field->get_name() => array('IS_NULL'), $fk_field->get_name() => 'IS_NOT_NULL' ) );
-		}
-	}
-}
 // End of file EE_REST_API_Capabilities.class.php

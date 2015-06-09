@@ -13,18 +13,18 @@
  *
  * ------------------------------------------------------------------------
  *
- * REST_API_Admin_Page
+ * Rest_Api_Admin_Page
  *
  * This contains the logic for setting up the REST_API Addon Admin related pages.  Any methods without PHP doc comments have inline docs with parent class.
  *
  *
- * @package			REST_API_Admin_Page (rest_api addon)
- * @subpackage 	admin/REST_API_Admin_Page.core.php
- * @author				Darren Ethier, Brent Christensen
+ * @package			Rest_Api_Admin_Page (rest_api addon)
+ * @subpackage 	admin/Rest_Api_Admin_Page.core.php
+ * @author				Mike Nelson
  *
  * ------------------------------------------------------------------------
  */
-class REST_API_Admin_Page extends EE_Admin_Page {
+class Rest_Api_Admin_Page extends EE_Admin_Page {
 
 
 	protected function _init_page_props() {
@@ -81,7 +81,7 @@ class REST_API_Admin_Page extends EE_Admin_Page {
 			),
 			'usage' => array(
 				'nav' => array(
-					'label' => __('REST_API Usage', 'event_espresso'),
+					'label' => __('REST API Usage', 'event_espresso'),
 					'order' => 30
 					),
 				'require_nonce' => FALSE
@@ -123,7 +123,7 @@ class REST_API_Admin_Page extends EE_Admin_Page {
 	 */
 	protected function _settings_page( $template ) {
 		EE_Registry::instance()->load_helper( 'Form_Fields' );
-		$this->_template_args['rest_api_config'] = EE_Config::instance()->get_config( 'addons', 'EED_REST_API', 'EE_REST_API_Config' );
+		$this->_template_args['rest_api_config'] = EE_Config::instance()->get_config( 'addons', 'EE_REST_API', 'EE_REST_API_Config' );
 		add_filter( 'FHEE__EEH_Form_Fields__label_html', '__return_empty_string' );
 		$this->_template_args['yes_no_values'] = array(
 			EE_Question_Option::new_instance( array( 'QSO_value' => 0, 'QSO_desc' => __('No', 'event_espresso'))),
@@ -140,7 +140,7 @@ class REST_API_Admin_Page extends EE_Admin_Page {
 
 
 	protected function _usage() {
-		$this->_template_args['admin_page_content'] = EEH_Template::display_template( EE_REST_API_ADMIN_TEMPLATE_PATH . 'rest_api_usage_info.template.php', array(), TRUE );
+		$this->_template_args['admin_page_content'] = EEH_Template::display_template( EE_REST_API_ADMIN_TEMPLATE_PATH . 'rest_api_usage_info.template.php', array( 'api_endpoint' => site_url() . '/wp-json/ee/v4.6/events' ), TRUE );
 		$this->display_admin_page_with_no_sidebar();
 	}
 
@@ -150,7 +150,7 @@ class REST_API_Admin_Page extends EE_Admin_Page {
 			$config = new EE_REST_API_Config();
 			$count = 1;
 		}else{
-			$config = EE_Config::instance()->get_config( 'addons', 'EED_REST_API', 'EE_REST_API_Config' );
+			$config = EE_Config::instance()->get_config( 'addons', 'EE_REST_API', 'EE_REST_API_Config' );
 			$count=0;
 			//otherwise we assume you want to allow full html
 			foreach($this->_req_data['rest_api'] as $top_level_key => $top_level_value){
@@ -169,7 +169,7 @@ class REST_API_Admin_Page extends EE_Admin_Page {
 				}
 			}
 		}
-		EE_Config::instance()->update_config( 'addons', 'EED_REST_API', $config );
+		EE_Config::instance()->update_config( 'addons', 'EE_REST_API', $config );
 		$this->_redirect_after_action( $count, 'Settings', 'updated', array('action' => $this->_req_data['return_action']));
 	}
 
@@ -183,18 +183,7 @@ class REST_API_Admin_Page extends EE_Admin_Page {
 //	}
 	private function _sanitize_config_input( $top_level_key, $second_level_key, $value ){
 		$sanitization_methods = array(
-			'display'=>array(
-				'enable_rest_api'=>'bool',
-//				'rest_api_height'=>'int',
-//				'enable_rest_api_filters'=>'bool',
-//				'enable_category_legend'=>'bool',
-//				'use_pickers'=>'bool',
-//				'event_background'=>'plaintext',
-//				'event_text_color'=>'plaintext',
-//				'enable_cat_classes'=>'bool',
-//				'disable_categories'=>'bool',
-//				'show_attendee_limit'=>'bool',
-			)
+			'api_debug_mode'=>'bool',
 		);
 		$sanitization_method = NULL;
 		if(isset($sanitization_methods[$top_level_key]) &&
@@ -227,5 +216,5 @@ class REST_API_Admin_Page extends EE_Admin_Page {
 
 
 }
-// End of file REST_API_Admin_Page.core.php
-// Location: /wp-content/plugins/eea-rest-api/admin/rest_api/REST_API_Admin_Page.core.php
+// End of file Rest_Api_Admin_Page.core.php
+// Location: /wp-content/plugins/eea-rest-api/admin/rest_api/Rest_Api_Admin_Page.core.php
