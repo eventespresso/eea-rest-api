@@ -100,15 +100,17 @@ class EE_Models_Rest_Read_Controller {
 		try{
 			$regex = '~' . EED_REST_API::ee_api_namespace_for_regex . '(.*)~';
 			$success = preg_match( $regex, $_path, $matches );
-			if ( is_array( $matches ) && isset( $matches[ 1 ] ) ) {
-				$model_name_plural = $matches[ 1 ];
+			if ( is_array( $matches ) && isset( $matches[ 1 ] ) && isset( $matches[ 1 ] ) ) {
+				$requested_version = $matches[ 1 ];
+				$controller->set_requested_version( $requested_version );
+				$model_name_plural = $matches[ 2 ];
 				$model_name_singular = EEH_Inflector::singularize_and_upper( $model_name_plural );
-				if ( ! EE_Registry::instance()->is_model_name( $model_name_singular ) ) {
-					return $this->send_response( new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) ) );
+				if ( ! $controller->get_model_version_info()->is_model_name_in_this_verison( $model_name_singular ) ) {
+					return $controller->send_response( new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) ) );
 				}
 				return $controller->send_response(
 						$controller->get_entities_from_model(
-								EE_Registry::instance()->load_model( $model_name_singular ),
+								$controller->get_model_version_info()->load_model( $model_name_singular ),
 								$filter,
 								$include ) );
 			} else {
@@ -133,15 +135,17 @@ class EE_Models_Rest_Read_Controller {
 			$inflector = new Inflector();
 			$regex = '~' . EED_REST_API::ee_api_namespace_for_regex . '(.*)/(.*)~';
 			$success = preg_match( $regex, $_path, $matches );
-			if ( $success && is_array( $matches ) && isset( $matches[ 1 ] ) ) {
-				$model_name_plural = $matches[ 1 ];
+			if ( $success && is_array( $matches ) && isset( $matches[ 1 ] ) && isset( $matches[ 2 ] ) ) {
+				$requested_version = $matches[ 1 ];
+				$controller->set_requested_version( $requested_version );
+				$model_name_plural = $matches[ 2 ];
 				$model_name_singular = EEH_Inflector::singularize_and_upper( $model_name_plural );
-				if ( ! EE_Registry::instance()->is_model_name( $model_name_singular ) ) {
-					return $this->send_response( new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) ) );
+				if ( ! $controller->get_model_version_info()->is_model_name_in_this_verison( $model_name_singular ) ) {
+					return $controller->send_response( new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $model_name_singular ) ) );
 				}
 				return $controller->send_response(
 						$controller->get_entity_from_model(
-								EE_Registry::instance()->load_model( $model_name_singular ),
+								$controller->get_model_version_info()->load_model( $model_name_singular ),
 								$id,
 								$include,
 								$controller->validate_context( isset( $filter[ 'caps' ] ) ? $filter[ 'caps' ] : EEM_Base::caps_read ) ) );
@@ -168,17 +172,19 @@ class EE_Models_Rest_Read_Controller {
 		try{
 			$regex = '~' . EED_REST_API::ee_api_namespace_for_regex . '(.*)/(.*)/(.*)~';
 			$success = preg_match( $regex, $_path, $matches );
-			if ( is_array( $matches ) && isset( $matches[ 1 ] ) && isset( $matches[3] ) ) {
-				$main_model_name_plural = $matches[ 1 ];
+			if ( is_array( $matches ) && isset( $matches[ 1 ] ) && isset( $matches[ 2 ] ) &&  isset( $matches[ 4 ] ) ) {
+				$requested_version = $matches[ 1 ];
+				$controller->set_requested_version( $requested_version );
+				$main_model_name_plural = $matches[ 2 ];
 				$main_model_name_singular = EEH_Inflector::singularize_and_upper( $main_model_name_plural );
-				if ( ! EE_Registry::instance()->is_model_name( $main_model_name_singular ) ) {
-					return $this->send_response( new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $main_model_name_singular ) ) );
+				if ( ! $controller->get_model_version_info()->is_model_name_in_this_verison( $main_model_name_singular ) ) {
+					return $controller->send_response( new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $main_model_name_singular ) ) );
 				}
-				$main_model = EE_Registry::instance()->load_model( $main_model_name_singular );
-				$related_model_name_maybe_plural = $matches[ 3 ];
+				$main_model = $controller->get_model_version_info()->load_model( $main_model_name_singular );
+				$related_model_name_maybe_plural = $matches[ 4 ];
 				$related_model_name_singular = EEH_Inflector::singularize_and_upper( $related_model_name_maybe_plural );
-				if ( ! EE_Registry::instance()->is_model_name( $related_model_name_singular ) ) {
-					return $this->send_response( new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $related_model_name_singular ) ) );
+				if ( ! $controller->get_model_version_info()->is_model_name_in_this_verison( $related_model_name_singular ) ) {
+					return $controller->send_response( new WP_Error( 'endpoint_parsing_error', sprintf( __( 'There is no model for endpoint %s. Please contact event espresso support', 'event_espresso' ), $related_model_name_singular ) ) );
 				}
 
 				return $controller->send_response(
@@ -335,6 +341,7 @@ class EE_Models_Rest_Read_Controller {
 	 */
 	public function create_entity_from_wpdb_result( $model, $db_row, $include, $context ) {
 		$result = $model->deduce_fields_n_values_from_cols_n_values( $db_row );
+		$result = array_intersect_key( $result, $this->get_model_version_info()->fields_on_model_in_this_version( $model ) );
 		foreach( $result as $field_name => $raw_field_value ) {
 			$field_obj = $model->field_settings_for($field_name);
 			$field_value = $field_obj->prepare_for_set_from_db( $raw_field_value );
@@ -593,7 +600,7 @@ class EE_Models_Rest_Read_Controller {
 	 * @return array of fields for this model. If $model_name is provided, then
 	 * the fields for that model, with the model's name removed from each.
 	 */
-	public static function extract_includes_for_this_model( $include_string, $model_name = null ) {
+	public function extract_includes_for_this_model( $include_string, $model_name = null ) {
 		if( is_array( $include_string ) ) {
 			$include_string = implode( ',', $include_string );
 		}
@@ -617,7 +624,7 @@ class EE_Models_Rest_Read_Controller {
 			//look for ones with no period
 			foreach( $includes as $field_to_include ) {
 				$field_to_include = trim( $field_to_include );
-				if( strpos($field_to_include, '.' ) === FALSE && ! EE_Registry::instance()->is_model_name( $field_to_include ) ) {
+				if( strpos($field_to_include, '.' ) === FALSE && ! $this->get_model_version_info()->is_model_name_in_this_verison( $field_to_include ) ) {
 					$extracted_fields_to_include[] = $field_to_include;
 				}
 			}
@@ -689,6 +696,38 @@ class EE_Models_Rest_Read_Controller {
 		}
 		return array();
 	}
+
+	/**
+	 * Indicates the version that was requested
+	 * @var string
+	 */
+	protected $_requested_version;
+	/**
+	 * Holds reference to the model versio info, which knows the requested version
+	 * @var EE_REST_API_Model_Version_Info
+	 */
+	protected $_model_version_info;
+	/**
+	 * Sets the version the user requested
+	 * @param string $version eg '4.8'
+	 */
+	public function set_requested_version( $version ) {
+		$this->_requested_version = $version;
+		$this->_model_version_info = new EE_REST_API_Model_Version_Info( $version );
+	}
+
+	/**
+	 * Gets the object that should be used for getting any info from the models,
+	 * because it's takes the requested and current core version into account
+	 * @return EE_REST_API_Model_Version_Info
+	 */
+	public function get_model_version_info(){
+		if( ! $this->_model_version_info ) {
+			throw new EE_Error( sprintf( __( 'Cannot use model version info before setting the requested version in the controller', 'event_espresso' ) ) );
+		}
+		return $this->_model_version_info;
+	}
+
 }
 
 
