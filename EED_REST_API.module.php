@@ -66,7 +66,7 @@ class EED_REST_API extends EED_Module {
 
 
 	public static function set_hooks_both() {
-		add_filter( 'json_endpoints', array( 'EED_REST_API', 'register_routes' ) );
+		add_filter( 'json_endpoints', array( 'EED_REST_API', 'register_routes_v1' ) );
 		add_filter( 'json_index', array( 'EE_REST_API_Controller_Model_Meta', 'filter_ee_metadata_into_index' ) );
 	}
 
@@ -77,7 +77,7 @@ class EED_REST_API extends EED_Module {
 	 * @param array $routes
 	 * @return array
 	 */
-	public static function register_routes( $routes ) {
+	public static function register_routes_v1( $routes ) {
 		$ee_routes = get_option( self::saved_routes_option_names, null );
 		if( ! $ee_routes || ( defined('EE_REST_API_DEV') && EE_REST_API_DEV )){
 			self::save_ee_routes();
@@ -87,6 +87,9 @@ class EED_REST_API extends EED_Module {
 		return $routes;
 	}
 
+	public static function register_routes_v2() {
+
+	}
 	/**
 	 * Calculates all the EE routes and saves it to a wordpress option so we don't
 	 * need to calculate it on every request
@@ -233,6 +236,8 @@ class EED_REST_API extends EED_Module {
 	public static function core_version() {
 		return apply_filters( 'FHEE__EED_REST_API__core_version', implode('.', array_slice( explode( '.', espresso_version() ), 0, 2 ) ) );
 	}
+
+
 
 
 

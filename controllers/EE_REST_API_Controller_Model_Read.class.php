@@ -287,7 +287,7 @@ class EE_REST_API_Controller_Model_Read extends EE_REST_API_Controller_Model_Bas
 			$result = array_intersect_key( $result, array_flip( $includes_for_this_model ) );
 		}
 		//add meta links and possibly include related models
-		foreach( apply_filters( 'FHEE__EE_REST_API_Controller_Model_Read__create_entity_from_wpdb_result__related_models_to_include', $model->relation_settings() ) as $relation_name => $relation_obj ) {
+		foreach( apply_filters( 'FHEE__EE_REST_API_Controller_Model_Read__create_entity_from_wpdb_result__related_models_to_include', $this->get_model_version_info()->related_models_in_current_version( $model ) ) as $relation_name => $relation_obj ) {
 			$related_model_part = $this->get_related_entity_name( $relation_name, $relation_obj );
 			if( empty( $includes_for_this_model ) || isset( $includes_for_this_model['meta'] ) ) {
 				$result['meta']['links'][$related_model_part] = $this->get_versioned_link_to( EEH_Inflector::pluralize_and_lower( $model->get_this_model_name() ) . '/' . $result[ $model->primary_key_name() ] . '/' . $related_model_part );

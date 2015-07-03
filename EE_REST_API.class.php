@@ -41,7 +41,8 @@ Class  EE_REST_API extends EE_Addon {
 					'Rest_Api_Admin_Page' 		=> EE_REST_API_ADMIN . 'Rest_Api_Admin_Page.core.php',
 					'Rest_Api_Admin_Page_Init' => EE_REST_API_ADMIN . 'Rest_Api_Admin_Page_Init.core.php',
 					'EE_REST_API_Capabilities' => EE_REST_API_PATH . 'core/EE_REST_API_Capabilities.class.php',
-					'EE_REST_API_Model_Version_Info' => EE_REST_API_PATH . 'core/EE_REST_API_Model_Version_Info.class.php'
+					'EE_REST_API_Model_Version_Info' => EE_REST_API_PATH . 'core/EE_REST_API_Model_Version_Info.class.php',
+					'EED_REST_API' => EE_REST_API_PATH . 'EED_REST_API.module.php',
 					//note, we also just autoloaded the entire controllers folder
 				),
 

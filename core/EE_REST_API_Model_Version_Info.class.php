@@ -80,6 +80,12 @@ class EE_REST_API_Model_Version_Info {
 	 */
 	protected $_cached_fields_on_models = array();
 
+	/**
+	 * 2d array where top-level keys are model names, 2nd-level keys are relation names,
+	 * and values are the relation objects
+	 * @var array
+	 */
+	protected $_cached_relations_on_models = array();
 
 	public function __construct( $requested_version ) {
 		$this->_requested_version = $requested_version;
@@ -375,6 +381,25 @@ class EE_REST_API_Model_Version_Info {
 			}
 		}
 		return $extra_properties;
+	}
+
+	/**
+	 *
+	 * @param EEM_Base $model
+	 * @return EE_Model_Relation_Base
+	 */
+	public function related_models_in_current_version( $model ) {
+		if( ! isset( $this->_cached_relations_on_models[ $model->get_this_model_name() ] ) ) {
+			foreach( $model->relation_settings() as $relation_name => $relation_obj ) {
+				if( $relation_obj instanceof EE_HABTM_Relation &&
+						$this->is_model_name_in_this_verison( $relation_obj->get_other_model()->get_this_model_name()  ) &&
+						) {
+					echo "\r\n$relation_name is a model in this version";
+					$this->_cached_relations_on_models[ $model->get_this_model_name() ][ $relation_name ] = $relation_obj;
+				}
+			}
+		}
+		return $this->_cached_relations_on_models[ $model->get_this_model_name() ];
 	}
 
 }
