@@ -1,27 +1,17 @@
 EE4 REST API
 =========
 
-An Event Espresso 4 addon for providing an RESTful interface for event espresso's data. If you are considering using this API, please <a href='http://eventespresso.com/developers/event-espresso-4-rest-api-survey/'>complete this survey</a> to help us make it better.
+An Event Espresso 4 addon for providing an RESTful interface for event espresso's data. If you are considering using this API, please <a href='http://eventespresso.com/developers/event-espresso-4-rest-api-survey/'>complete this survey</a> to help us make it better. 
+
+Documentation, installation and usages guides are located on <a href='http://developer.eventespresso.com/docs/ee4-json-rest-api-documentation/'>developer.eventespresso.com/ee-plugin/ee4-json-rest-api/</a>
 
 The master branch of this plugin should work with EE core 4.6.32 or higher.
 
-This plugin also requires you have the master branch of <a href='https://github.com/WP-API/WP-API'>the WP API</a> active on your site.
-
-Installation:
-This plugin/addon needs to be uploaded to the "/wp-content/plugins/" directory on your server or installed using the WordPress plugins installer; and then activated. It
+This plugin also requires you have the master branch of <a href='https://github.com/WP-API/WP-API'>the WP API</a> active on your site. 
 
 The general roadmap is:
-<ul><li>hook into the WP API for registering endpoints and other basic framework code</li>
-<li>give full access to the EE models' query params for filtering</li>
-<li>use versioning, in case we want to adjust our API's interface (should be independent of WP API's versioning)</li>
-<li>have generalized endpoints for each EE model, except simple join models (eg, if you register a model named
-"EEM_Thingy", there should automatically be an endpoint called "ee4/thingies" for GETting all thingies, another
-for creating thingies, another for updating thingies, etc)</li>
-<li>have endpoints for viewing and editing EE's config data</li>
-<li>add general EE data onto the WP API index</li>
-<li>read-only fields from the models should be prefixed with an underscore (fields which are
-derived from other things, eg TXN_total, should be read-only, and the API shoudl handle setting those on creations or updates);
-we should generally avoid having foreign keys in the model data</li>
-<li>the API will need to respect the permissions of the user</li>
-<li>the EE API should allow API clients to specify what specific fields and related model objects they want in a request</li>
-<li>have SPCO-style endpoints for simplifying the reg process and handling more business logic (like sending emails, fetching the questions for registrations for specific events, etc.</li></ul>
+<ul>
+<li>Add support for editing and updating EE data (we may try to enforce data integrity, or just give authenticated users full access to their data) (on hold until the community lets us know there's a demand for it)</li>
+<li>have SPCO-style endpoints for simplifying the reg process and handling more business logic (like sending emails, fetching the questions for registrations for specific events, etc.; also on hold until the community lets us know there is demand for it)</li></ul>
+
+Please report any feedback, feature requests, bug reports, on general interest in <a href='https://github.com/eventespresso/eea-rest-api/issues'>the github issue tracker</a>.
