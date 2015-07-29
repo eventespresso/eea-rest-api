@@ -14,7 +14,7 @@ if ( !defined( 'EVENT_ESPRESSO_VERSION' ) ) {
  */
 class EED_REST_API_Test extends EE_UnitTestCase{
 	function test_core_version(){
-		$this->assertEquals( '4.6', EED_REST_API::core_version() );
+		$this->assertEquals( '4.7', EED_REST_API::core_version() );
 	}
 }
 
