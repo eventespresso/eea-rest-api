@@ -1,7 +1,7 @@
 EE4 REST API
 =========
 
-An Event Espresso 4 addon for providing an RESTful interface for event espresso's data. If you are considering using this API, please <a href='http://eventespresso.com/developers/event-espresso-4-rest-api-survey/'>complete this survey</a> to help us make it better. 
+An Event Espresso 4 addon for providing an RESTful interface for Event Espresso's data. If you are considering using this API, please <a href='http://eventespresso.com/developers/event-espresso-4-rest-api-survey/'>complete this survey</a> to help us make it better. 
 
 Documentation, installation and usages guides are located on <a href='http://developer.eventespresso.com/docs/ee4-json-rest-api-documentation/'>developer.eventespresso.com/ee-plugin/ee4-json-rest-api/</a>
 
