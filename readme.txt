@@ -32,8 +32,9 @@ This plugin also requires you have the master branch of the WP API active on you
 * [Install Event Espresso 4 on that server](https://eventespresso.com/wiki/installing-event-espresso/)
 * [Install the WordPress API 1.2](https://wordpress.org/plugins/json-rest-api/) [(master branch on github when this was written)](https://github.com/WP-API/WP-API/tree/master)
 * Install this Event Espresso REST API Addon by either:
-** By checking out the github eea-rest-api project contents into  wp-content/plugins/eea-rest-api directory and activate it, or
-** download the latest zip of master branch, and uploading it to WordPress using the wordpress plugin uploader
+
+ - By checking out the github eea-rest-api project contents into  wp-content/plugins/eea-rest-api directory and activate it, or 
+ - download the latest zip of master branch, and uploading it to WordPress using the wordpress plugin uploader
 
 
 == Frequently Asked Questions ==
