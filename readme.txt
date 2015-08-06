@@ -13,11 +13,9 @@ An Event Espresso 4 plugin for providing an RESTful interface for Event Espresso
 
 A RESTful interface for accessing all Event Espresso event data (see: [Decaf](https://wordpress.org/plugins/event-espresso-decaf/) or [Core](https://github.com/eventespresso/event-espresso-core), or [EventEspresso.com](http://eventespresso.com/pricing/?ee_ver=ee4)). That means you can build client-side javascript code, mobile apps, and programs in any language (and on any server) that can read data used in Event Espresso 4.
 
-We've reached the first milestone which provides read access to all EE4 data. That means you can build client-side javascript code, mobile apps, and programs  in any language (and on any server) that can read data used in Event Espresso 4.
-
 So what's great about the EE4 REST API and what can you do with it? Here's a start:
 
-* Unlike its predecessor, the [EE3 JSON API](http://eventespresso.com/product/espresso-json-api/), this add-on is compatible with Event Espresso 4 (not Event Espresso 3)
+* The Event Espresso 4 API is compatible with Event Espresso 4 (not Event Espresso 3) 
 * It's built using the [WordPress REST API (aka WP API)](https://wordpress.org/plugins/json-rest-api/). That means many plugins that work with the WP API work with it too. WP API gives the EE4 REST API a solid foundation by handling authentication, providing endpoint discovery, and supplying lots of the "behind-the-scenes" code.
 * It provides read access to all Event Espresso 4 data: events, tickets, datetimes, registrations, custom questions and answers, payment methods, and configuration data. Even Event Espresso 4 add-ons' data, like from the [Mailchimp Add-on](http://eventespresso.com/product/eea-mailchimp/) or the [People Add-on](http://eventespresso.com/product/eea-people-addon/), is available by default. If we've missed something [tell us in the Github issue tracker](https://github.com/eventespresso/eea-rest-api/issues/new)!
 * It uses Event Espresso's [models system](http://developer.eventespresso.com/docs/model-querying/) for querying the database. This gives API clients nearly as much querying abilities as server-side plugins. 
