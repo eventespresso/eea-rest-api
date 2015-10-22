@@ -1,9 +1,9 @@
 <?php
 /*
-  Plugin Name: Event Espresso - REST API (EE4.x+)
+  Plugin Name: Event Espresso - REST API (EE4.6.32+)
   Plugin URI: http://www.eventespresso.com
   Description: The Event Espresso REST API adds NEW stuff to Event Espresso. Compatible with Event Espresso 4.x or higher
-  Version: 3.0.0.beta.002
+  Version: 3.1.0.beta.000
   Author: Event Espresso
   Author URI: http://www.eventespresso.com
   Copyright 2014 Event Espresso (email : support@eventespresso.com)
@@ -36,7 +36,7 @@
  *
  * ------------------------------------------------------------------------
  */
-define( 'EE_REST_API_VERSION', '3.0.0.beta.002' );
+define( 'EE_REST_API_VERSION', '3.1.0.beta.000' );
 define( 'EE_REST_API_PLUGIN_FILE',  __FILE__ );
 function load_espresso_rest_api() {
 	if ( class_exists( 'EE_Addon' ) ) {

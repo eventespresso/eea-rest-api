@@ -95,7 +95,14 @@ class EE_REST_API_Model_Version_Info {
 				)
 			),
 			'4.8' => array(
-				//didn't actually make any changes to the models, just how line items are organized
+				//these changes actually happend at various points in EE
+				'Post_Meta' => EE_REST_API_Model_Version_Info::model_added,
+				'Line_Item' => array(
+					'LIN_timestamp'
+				),
+				'Question_Option' => array(
+					'QSO_system'
+				)
 			)
 		);
 
