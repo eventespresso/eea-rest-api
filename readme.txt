@@ -9,6 +9,9 @@ License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 An Event Espresso 4 plugin for providing an RESTful interface for Event Espresso's events data.
 
+== Notice ==
+This API has been deprecated as of Event Espresso 4.8.29, when the new EE4 REST API was added into Event Espresso 4 core. This new EE4 REST API in Event Espresso 4 Core requires WordPress 4.4 to operate. Also, the EE4 REST API in Event Espresso 4 Core can be run concurrently with this EE4 REST API Plugin. Please see http://developer.eventespresso.com/docs/ee4-rest-api-introduction/#Versioning_and_Backwards_Compatibility for more details 
+
 == Description ==
 
 A RESTful interface for accessing all Event Espresso event data (see: [Decaf](https://wordpress.org/plugins/event-espresso-decaf/) or [Core](https://github.com/eventespresso/event-espresso-core), or [EventEspresso.com](http://eventespresso.com/pricing/?ee_ver=ee4)). That means you can build client-side javascript code, mobile apps, and programs in any language (and on any server) that can read data used in Event Espresso 4.
