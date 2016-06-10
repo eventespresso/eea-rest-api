@@ -1,6 +1,9 @@
 EE4 REST API
 =========
 
+Alert: this addon has been deprecated since Event Espresso 4.8.29 was released, which includes an EE4 REST API compatible with
+WP API v2. See https://eventespresso.com/2016/01/rest-api-now-in-ee4-core/. This code is only provided for legacy purposes.
+
 An Event Espresso 4 addon for providing an RESTful interface for Event Espresso's data. If you are considering using this API, please <a href='http://eventespresso.com/developers/event-espresso-4-rest-api-survey/'>complete this survey</a> to help us make it better. 
 
 Documentation, installation and usages guides are located on <a href='http://developer.eventespresso.com/docs/ee4-json-rest-api-documentation/'>developer.eventespresso.com/ee-plugin/ee4-json-rest-api/</a>
