@@ -1,7 +1,8 @@
 EE4 REST API
 =========
 
-Alert: this addon has been deprecated since Event Espresso 4.8.29 was released, which includes an EE4 REST API compatible with
+** DEPRECATED - DO NOT USE **
+This addon has been deprecated since Event Espresso 4.8.29 was released, which includes an EE4 REST API compatible with
 WP API v2. See https://eventespresso.com/2016/01/rest-api-now-in-ee4-core/. This code is only provided for legacy purposes.
 
 An Event Espresso 4 addon for providing an RESTful interface for Event Espresso's data. If you are considering using this API, please <a href='http://eventespresso.com/developers/event-espresso-4-rest-api-survey/'>complete this survey</a> to help us make it better. 
@@ -18,3 +19,12 @@ The general roadmap is:
 <li>have SPCO-style endpoints for simplifying the reg process and handling more business logic (like sending emails, fetching the questions for registrations for specific events, etc.; also on hold until the community lets us know there is demand for it)</li></ul>
 
 Please report any feedback, feature requests, bug reports, on general interest in <a href='https://github.com/eventespresso/eea-rest-api/issues'>the github issue tracker</a>.
+
+## Newsletter
+Be the first to know when we ship new features ... [signup here](https://eventespresso.com/newsletter/).
+
+## Community Chat
+Join a real-time community chat group for professionals that are leading the way in events from event management, event technology and event marketing to work-life balance.
+
+[Join the Discussion →](https://eventsmart.com/contact/community-chat/?utm_source=github&utm_medium=link&utm_campaign=ee4_github_plugin_description_homepage&utm_content=community+chat)
+
